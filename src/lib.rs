@@ -17,6 +17,7 @@ mod error;
 pub mod frost;
 mod hash;
 mod messages;
+pub mod orchard;
 pub mod sapling;
 mod scalar_mul;
 pub(crate) mod signature;
