@@ -2,7 +2,19 @@
 
 Entries are listed in reverse chronological order.
 
-## Unreleased
+## 0.1.0
+
+Initial release of the `reddsa` crate, extracted from `redjubjub`. Changes
+relative to `redjubjub 0.4.0`:
+
+* Generalised the codebase, to enable usage for both RedJubjub and RedPallas.
+
+  * Introduce `SpendAuth: SigType` and `Binding: SigType` traits.
+  * The prior `SpendAuth` and `Binding` enums have been renamed to
+    `sapling::{SpendAuth, Binding}`.
+  * Added `orchard::{SpendAuth, Binding}` enums.
+
+* Migrated to `group 0.11`, `jubjub 0.8`.
 
 * Fixed a bug where small-order verification keys (including the identity) were
   handled inconsistently: the `VerificationKey` parsing logic rejected them, but
@@ -17,43 +29,3 @@ Entries are listed in reverse chronological order.
     they can either move the checks into their own code, or migrate their
     consensus rules to match the RedDSA specification.
 
-## 0.4.0
-
-* Upgrade `rand` to 0.8, `rand_core` to 0.6, and `rand_chacha` to 0.3, together
-  (#55)
-* Migrate to `jubjub 0.6` (#59)
-* Derive `Debug, PartialEq` (#67)
-* Restrict the maximum number of FROST participants to 255 by using `u8` (#66)
-
-## 0.3.0
-
-* Initial support for FROST (Flexible Round-Optimized Schnorr Threshold)
-  signatures.
-
-## 0.2.2
-
-* Make `batch::Item: Clone + Debug` and add `batch::Item::verify_single`
-  for fallback verification when batch verification fails.
-
-## 0.2.1
-
-* Update `Cargo.toml` metadata.
-
-## 0.2.0
-
-* Change terminology to "signing key" and "verification key" from "secret key"
-  and "public key".
-* Adds a batch verification implementation which can process both binding and
-  spend authorization signatures in the same batch.
-
-## 0.1.1
-
-* Explicitly document the consensus checks performed by
-  `impl TryFrom<PublicKeyBytes<T>> for PublicKey<T>`.
-* Add a test that small-order public keys are rejected.
-* Add `html_root_url` to ensure cross-rendering docs works correctly (thanks
-  @QuietMisdreavus).
-
-## 0.1.0
-
-* Initial release.

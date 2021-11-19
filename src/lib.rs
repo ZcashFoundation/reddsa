@@ -8,7 +8,7 @@
 // - Deirdre Connolly <deirdre@zfnd.org>
 // - Henry de Valence <hdevalence@hdevalence.ca>
 
-#![doc(html_root_url = "https://docs.rs/reddsa/0.0.0")]
+#![doc(html_root_url = "https://docs.rs/reddsa/0.1.0")]
 #![cfg_attr(feature = "nightly", feature(external_doc))]
 #![cfg_attr(feature = "nightly", doc(include = "../README.md"))]
 #![deny(missing_docs)]
