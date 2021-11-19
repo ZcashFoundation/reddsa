@@ -8,8 +8,12 @@
 // - Deirdre Connolly <deirdre@zfnd.org>
 // - Henry de Valence <hdevalence@hdevalence.ca>
 
+#![doc(html_root_url = "https://docs.rs/reddsa/0.0.0")]
+#![cfg_attr(feature = "nightly", feature(external_doc))]
+#![cfg_attr(feature = "nightly", doc(include = "../README.md"))]
 #![deny(missing_docs)]
-#![doc = include_str!("../README.md")]
+
+//! Docs require the `nightly` feature until RFC 1990 lands.
 
 pub mod batch;
 mod constants;
