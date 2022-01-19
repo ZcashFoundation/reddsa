@@ -2,6 +2,10 @@
 
 Entries are listed in reverse chronological order.
 
+## 0.2.0
+
+* Migrated to `pasta_curves 0.3`, `blake2b_simd 1`.
+
 ## 0.1.0
 
 Initial release of the `reddsa` crate, extracted from `redjubjub`. Changes

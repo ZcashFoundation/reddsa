@@ -5,7 +5,7 @@ edition = "2018"
 # - Update html_root_url
 # - Update CHANGELOG.md
 # - Create git tag.
-version = "0.1.0"
+version = "0.2.0"
 authors = [
     "Henry de Valence <hdevalence@hdevalence.ca>",
     "Deirdre Connolly <durumcrustulum@gmail.com>",
@@ -23,12 +23,11 @@ description = "A standalone implementation of the RedDSA signature scheme."
 features = ["nightly"]
 
 [dependencies]
-blake2b_simd = "0.5"
+blake2b_simd = "1"
 byteorder = "1.4"
-digest = "0.9"
 group = "0.11"
 jubjub = "0.8"
-pasta_curves = "0.2.1"
+pasta_curves = "0.3"
 rand_core = "0.6"
 serde = { version = "1", optional = true, features = ["derive"] }
 thiserror = "1.0"
