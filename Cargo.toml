@@ -46,9 +46,7 @@ serde_json = "1.0"
 
 [features]
 std = ["blake2b_simd/std", "thiserror",
-       "serde", # conditional compilation for serde not complete (issue #9)
-       "alloc"]
-alloc = []
+       "serde"] # conditional compilation for serde not complete (issue #9)
 nightly = []
 default = ["std"]
 
