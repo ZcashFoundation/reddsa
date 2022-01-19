@@ -2,6 +2,13 @@
 
 Entries are listed in reverse chronological order.
 
+## Unreleased
+
+* Migrated to `pasta_curves 0.3`,
+* Added support for `no-std` builds, via new (default-enabled) `std` feature flag.
+  Crate still depends on `alloc`. Module `frost` is supported on `std` feature
+  only.
+
 ## 0.1.0
 
 Initial release of the `reddsa` crate, extracted from `redjubjub`. Changes
