@@ -4,7 +4,8 @@ Entries are listed in reverse chronological order.
 
 ## 0.2.0
 
-* Migrated to `pasta_curves 0.3`, `blake2b_simd 1`.
+* Migrate to `pasta_curves` 0.3, `blake2b_simd` 1, removed unneeded `digest` (#10)
+* Update the include_str support to fix CI on nightly (#12)
 
 ## 0.1.0
 
