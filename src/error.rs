@@ -8,18 +8,28 @@
 // - Deirdre Connolly <deirdre@zfnd.org>
 // - Henry de Valence <hdevalence@hdevalence.ca>
 
-use thiserror::Error;
+use core::fmt;
 
 /// An error related to RedDSA signatures.
-#[derive(Error, Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Error {
     /// The encoding of a signing key was malformed.
-    #[error("Malformed signing key encoding.")]
     MalformedSigningKey,
     /// The encoding of a verification key was malformed.
-    #[error("Malformed verification key encoding.")]
     MalformedVerificationKey,
     /// Signature verification failed.
-    #[error("Invalid signature.")]
     InvalidSignature,
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MalformedSigningKey => write!(f, "Malformed signing key encoding."),
+            Self::MalformedVerificationKey => write!(f, "Malformed verification key encoding."),
+            Self::InvalidSignature => write!(f, "Invalid signature."),
+        }
+    }
 }

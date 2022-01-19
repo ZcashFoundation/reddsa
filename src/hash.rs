@@ -8,7 +8,7 @@
 // - Deirdre Connolly <deirdre@zfnd.org>
 // - Henry de Valence <hdevalence@hdevalence.ca>
 
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use blake2b_simd::{Params, State};
 

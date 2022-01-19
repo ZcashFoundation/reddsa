@@ -1,8 +1,12 @@
+#[cfg(all(feature = "std", feature = "serde"))]
 use rand::thread_rng;
+#[cfg(all(feature = "std", feature = "serde"))]
 use std::collections::HashMap;
 
+#[cfg(all(feature = "std", feature = "serde"))]
 use reddsa::{frost, sapling};
 
+#[cfg(all(feature = "std", feature = "serde"))]
 #[test]
 fn check_sign_with_dealer() {
     let mut rng = thread_rng();

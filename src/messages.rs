@@ -6,6 +6,7 @@ use crate::{frost, signature, verification_key, SpendAuth};
 use group::GroupEncoding;
 use serde::{Deserialize, Serialize};
 
+use alloc::vec::Vec;
 use std::{collections::BTreeMap, convert::TryInto};
 
 #[cfg(test)]

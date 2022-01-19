@@ -1,6 +1,7 @@
 //! Signature types for the Orchard protocol.
 
-use std::borrow::Borrow;
+use alloc::vec::Vec;
+use core::borrow::Borrow;
 
 use group::{ff::PrimeField, Group, GroupEncoding};
 use pasta_curves::pallas;

@@ -8,6 +8,7 @@
 // - Deirdre Connolly <deirdre@zfnd.org>
 // - Henry de Valence <hdevalence@hdevalence.ca>
 
+#![no_std]
 #![doc(html_root_url = "https://docs.rs/reddsa/0.1.0")]
 #![cfg_attr(feature = "nightly", feature(external_doc))]
 #![cfg_attr(feature = "nightly", doc(include = "../README.md"))]
@@ -15,11 +16,19 @@
 
 //! Docs require the `nightly` feature until RFC 1990 lands.
 
+#[macro_use]
+extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
+
+//#[cfg(feature = "std")]
 pub mod batch;
 mod constants;
 mod error;
+#[cfg(feature = "std")]
 pub mod frost;
 mod hash;
+#[cfg(feature = "std")]
 mod messages;
 pub mod orchard;
 pub mod sapling;
@@ -76,7 +85,7 @@ pub(crate) mod private {
     }
 
     pub trait Sealed<T: SigType>:
-        Copy + Clone + Default + Eq + PartialEq + std::fmt::Debug
+        Copy + Clone + Default + Eq + PartialEq + core::fmt::Debug
     {
         const H_STAR_PERSONALIZATION: &'static [u8; 16];
         type Scalar: group::ff::PrimeField + SealedScalar;

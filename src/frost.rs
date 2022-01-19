@@ -23,6 +23,7 @@
 //! Internally, keygen_with_dealer generates keys using Verifiable Secret
 //! Sharing,  where shares are generated using Shamir Secret Sharing.
 
+use alloc::vec::Vec;
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
