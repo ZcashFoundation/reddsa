@@ -21,7 +21,6 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-//#[cfg(feature = "std")]
 pub mod batch;
 mod constants;
 mod error;
