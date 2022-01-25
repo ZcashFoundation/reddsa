@@ -2,12 +2,16 @@
 
 Entries are listed in reverse chronological order.
 
-## Unreleased
+## 0.2.1
 
-* Migrated to `pasta_curves 0.3`,
 * Added support for `no-std` builds, via new (default-enabled) `std` feature flag.
   Crate still depends on `alloc`. Module `frost` is supported on `std` feature
   only.
+  
+## 0.2.0
+
+* Migrate to `pasta_curves` 0.3, `blake2b_simd` 1, removed unneeded `digest` (#10)
+* Update the include_str support to fix CI on nightly (#12)
 
 ## 0.1.0
 
