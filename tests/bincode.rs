@@ -1,13 +1,9 @@
-#[cfg(feature = "std")]
+#![cfg(feature = "std")]
+
+use proptest::prelude::*;
+use reddsa::*;
 use std::convert::TryFrom;
 
-#[cfg(feature = "std")]
-use proptest::prelude::*;
-
-#[cfg(feature = "std")]
-use reddsa::*;
-
-#[cfg(feature = "std")]
 proptest! {
     #[test]
     fn secretkey_serialization(
