@@ -2,11 +2,11 @@
 
 Entries are listed in reverse chronological order.
 
-## 0.2.1
+## Unreleased
 
-* Added support for `no-std` builds, via new (default-enabled) `std` feature flag.
-  Crate still depends on `alloc`. Module `frost` is supported on `std` feature
-  only.
+* Added support for `no-std` builds, via new (default-enabled) `std` and `alloc`
+  feature flags. Module `batch` is supported on `alloc` feature only. Module
+  `frost` is supported on `std` feature only.
   
 ## 0.2.0
 

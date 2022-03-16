@@ -48,8 +48,9 @@ rand_chacha = "0.3"
 serde_json = "1.0"
 
 [features]
-std = ["blake2b_simd/std", "thiserror", "zeroize",
+std = ["blake2b_simd/std", "thiserror", "zeroize", "alloc",
        "serde"] # conditional compilation for serde not complete (issue #9)
+alloc = []
 nightly = []
 default = ["std"]
 
