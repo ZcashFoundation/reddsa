@@ -2,8 +2,13 @@
 
 Entries are listed in reverse chronological order.
 
+## Unreleased
+
+* Migrate to `group` 0.12, `jubjub` 0.9, `pasta_curves` 0.4
+
 ## 0.2.0
 
+* MSRV is now 1.56.0
 * Migrate to `pasta_curves` 0.3, `blake2b_simd` 1, removed unneeded `digest` (#10)
 * Update the include_str support to fix CI on nightly (#12)
 
