@@ -25,9 +25,9 @@ features = ["nightly"]
 [dependencies]
 blake2b_simd = "1"
 byteorder = "1.4"
-group = "0.11"
-jubjub = "0.8"
-pasta_curves = "0.3"
+group = "0.12"
+jubjub = "0.9"
+pasta_curves = "0.4"
 rand_core = "0.6"
 serde = { version = "1", optional = true, features = ["derive"] }
 thiserror = "1.0"
