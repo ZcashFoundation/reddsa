@@ -4,12 +4,14 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* Migrate to `group` 0.12, `jubjub` 0.9, `pasta_curves` 0.4
 * Added support for `no-std` builds, via new (default-enabled) `std` and `alloc`
   feature flags. Module `batch` is supported on `alloc` feature only. Module
   `frost` is supported on `std` feature only.
-  
+
 ## 0.2.0
 
+* MSRV is now 1.56.0
 * Migrate to `pasta_curves` 0.3, `blake2b_simd` 1, removed unneeded `digest` (#10)
 * Update the include_str support to fix CI on nightly (#12)
 
