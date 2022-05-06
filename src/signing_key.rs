@@ -8,7 +8,7 @@
 // - Deirdre Connolly <deirdre@zfnd.org>
 // - Henry de Valence <hdevalence@hdevalence.ca>
 
-use std::{
+use core::{
     convert::{TryFrom, TryInto},
     marker::PhantomData,
 };

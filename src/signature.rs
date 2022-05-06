@@ -8,7 +8,7 @@
 // - Henry de Valence <hdevalence@hdevalence.ca>
 
 //! RedDSA Signatures
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::SigType;
 

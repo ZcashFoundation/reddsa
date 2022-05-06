@@ -1,15 +1,19 @@
 //! Signature types for the Orchard protocol.
 
-use std::borrow::Borrow;
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+#[cfg(feature = "alloc")]
+use core::borrow::Borrow;
 
-use group::{ff::PrimeField, Group, GroupEncoding};
+use group::GroupEncoding;
+#[cfg(feature = "alloc")]
+use group::{ff::PrimeField, Group};
 use pasta_curves::pallas;
 
-use crate::{
-    private,
-    scalar_mul::{LookupTable5, NonAdjacentForm, VartimeMultiscalarMul},
-    SigType,
-};
+use crate::{private, SigType};
+
+#[cfg(feature = "alloc")]
+use crate::scalar_mul::{LookupTable5, NonAdjacentForm, VartimeMultiscalarMul};
 
 /// The byte-encoding of the basepoint for `OrchardSpendAuthSig`.
 const ORCHARD_SPENDAUTHSIG_BASEPOINT_BYTES: [u8; 32] = [
@@ -74,6 +78,7 @@ impl private::Sealed<Binding> for Binding {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl NonAdjacentForm for pallas::Scalar {
     /// Compute a width-\\(w\\) "Non-Adjacent Form" of this scalar.
     ///
@@ -136,6 +141,7 @@ impl NonAdjacentForm for pallas::Scalar {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<'a> From<&'a pallas::Point> for LookupTable5<pallas::Point> {
     #[allow(non_snake_case)]
     fn from(A: &'a pallas::Point) -> Self {
@@ -149,6 +155,7 @@ impl<'a> From<&'a pallas::Point> for LookupTable5<pallas::Point> {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl VartimeMultiscalarMul for pallas::Point {
     type Scalar = pallas::Scalar;
     type Point = pallas::Point;

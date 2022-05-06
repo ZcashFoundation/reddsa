@@ -10,7 +10,8 @@
 // - Henry de Valence <hdevalence@hdevalence.ca>
 // - Deirdre Connolly <deirdre@zfnd.org>
 
-use std::{borrow::Borrow, fmt::Debug};
+use alloc::vec::Vec;
+use core::{borrow::Borrow, fmt::Debug};
 
 use jubjub::{ExtendedNielsPoint, ExtendedPoint};
 

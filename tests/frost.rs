@@ -1,3 +1,5 @@
+#![cfg(all(feature = "std", feature = "serde"))]
+
 use rand::thread_rng;
 use std::collections::HashMap;
 

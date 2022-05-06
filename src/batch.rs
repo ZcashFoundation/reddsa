@@ -18,7 +18,8 @@
 //! and loss of the ability to easily pinpoint failing signatures.
 //!
 
-use std::convert::TryFrom;
+use alloc::vec::Vec;
+use core::convert::TryFrom;
 
 use group::{
     cofactor::CofactorGroup,
@@ -246,7 +247,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
             VKs.push(VK);
         }
 
-        use std::iter::once;
+        use core::iter::once;
 
         let scalars = once(&P_spendauth_coeff)
             .chain(once(&P_binding_coeff))

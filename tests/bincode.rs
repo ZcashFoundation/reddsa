@@ -1,8 +1,8 @@
-use std::convert::TryFrom;
+#![cfg(feature = "std")]
 
 use proptest::prelude::*;
-
 use reddsa::*;
+use std::convert::TryFrom;
 
 proptest! {
     #[test]

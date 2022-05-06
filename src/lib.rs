@@ -8,19 +8,30 @@
 // - Deirdre Connolly <deirdre@zfnd.org>
 // - Henry de Valence <hdevalence@hdevalence.ca>
 
+#![no_std]
 #![deny(missing_docs)]
 #![doc = include_str!("../README.md")]
 
 //! Docs require the `nightly` feature until RFC 1990 lands.
 
+#[cfg(feature = "alloc")]
+#[macro_use]
+extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
+
+#[cfg(feature = "alloc")]
 pub mod batch;
 mod constants;
 mod error;
+#[cfg(feature = "std")]
 pub mod frost;
 mod hash;
+#[cfg(feature = "std")]
 mod messages;
 pub mod orchard;
 pub mod sapling;
+#[cfg(feature = "alloc")]
 mod scalar_mul;
 pub(crate) mod signature;
 mod signing_key;
@@ -74,12 +85,18 @@ pub(crate) mod private {
     }
 
     pub trait Sealed<T: SigType>:
-        Copy + Clone + Default + Eq + PartialEq + std::fmt::Debug
+        Copy + Clone + Default + Eq + PartialEq + core::fmt::Debug
     {
         const H_STAR_PERSONALIZATION: &'static [u8; 16];
         type Scalar: group::ff::PrimeField + SealedScalar;
+
+        // `Point: VartimeMultiscalarMul` is conditioned by `alloc` feature flag
+        // This is fine because `Sealed` is an internal trait.
+        #[cfg(feature = "alloc")]
         type Point: group::cofactor::CofactorCurve<Scalar = Self::Scalar>
             + scalar_mul::VartimeMultiscalarMul<Scalar = Self::Scalar, Point = Self::Point>;
+        #[cfg(not(feature = "alloc"))]
+        type Point: group::cofactor::CofactorCurve<Scalar = Self::Scalar>;
 
         fn basepoint() -> T::Point;
     }
