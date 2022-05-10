@@ -14,7 +14,7 @@ authors = [
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ZcashFoundation/reddsa"
-categories = ["cryptography", "no_std"]
+categories = ["cryptography", "no-std"]
 keywords = ["cryptography", "crypto", "zcash"]
 description = "A standalone implementation of the RedDSA signature scheme."
 
