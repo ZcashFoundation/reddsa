@@ -2,10 +2,9 @@
 name = "reddsa"
 edition = "2021"
 # When releasing to crates.io:
-# - Update html_root_url
 # - Update CHANGELOG.md
 # - Create git tag.
-version = "0.2.0"
+version = "0.3.0"
 authors = [
     "Henry de Valence <hdevalence@hdevalence.ca>",
     "Deirdre Connolly <durumcrustulum@gmail.com>",
@@ -15,7 +14,7 @@ authors = [
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ZcashFoundation/reddsa"
-categories = ["cryptography"]
+categories = ["cryptography", "no_std"]
 keywords = ["cryptography", "crypto", "zcash"]
 description = "A standalone implementation of the RedDSA signature scheme."
 
