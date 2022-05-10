@@ -2,7 +2,7 @@
 
 Entries are listed in reverse chronological order.
 
-## Unreleased
+## 0.3.0
 
 * Migrate to `group` 0.12, `jubjub` 0.9, `pasta_curves` 0.4
 * Added support for `no-std` builds, via new (default-enabled) `std` and `alloc`
