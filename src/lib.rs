@@ -24,6 +24,8 @@ extern crate std;
 pub mod batch;
 mod constants;
 mod error;
+#[cfg(feature = "std")]
+pub mod frost_redpallas;
 mod hash;
 pub mod orchard;
 pub mod sapling;
