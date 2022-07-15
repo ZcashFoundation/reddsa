@@ -26,6 +26,7 @@ mod constants;
 mod error;
 #[cfg(feature = "std")]
 pub mod frost;
+pub mod frost_redpallas;
 mod hash;
 #[cfg(feature = "std")]
 mod messages;
