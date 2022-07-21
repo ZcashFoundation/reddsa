@@ -179,6 +179,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
     /// [ps]: https://zips.z.cash/protocol/protocol.pdf#reddsabatchverify
     #[allow(non_snake_case)]
     pub fn verify<R: RngCore + CryptoRng>(self, mut rng: R) -> Result<(), Error> {
+        // https://p.z.cash/TCR:bad-txns-orchard-binding-signature-invalid?partial
         let n = self.signatures.len();
 
         let mut VK_coeffs = Vec::with_capacity(n);
