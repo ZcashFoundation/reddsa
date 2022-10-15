@@ -33,7 +33,7 @@ pub struct SigningKey<T: SigType> {
 
 impl<'a, T: SigType> From<&'a SigningKey<T>> for VerificationKey<T> {
     fn from(sk: &'a SigningKey<T>) -> VerificationKey<T> {
-        sk.pk.clone()
+        sk.pk
     }
 }
 

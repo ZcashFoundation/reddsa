@@ -24,11 +24,7 @@ extern crate std;
 pub mod batch;
 mod constants;
 mod error;
-#[cfg(feature = "std")]
-pub mod frost;
 mod hash;
-#[cfg(feature = "std")]
-mod messages;
 pub mod orchard;
 pub mod sapling;
 #[cfg(feature = "alloc")]
