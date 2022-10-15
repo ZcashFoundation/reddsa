@@ -65,10 +65,10 @@ pub struct Item<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> 
 
 impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> {
     /// Create a batch item from a `SpendAuth` signature.
-    pub fn from_spendauth<'msg, M: AsRef<[u8]>>(
+    pub fn from_spendauth<M: AsRef<[u8]>>(
         vk_bytes: VerificationKeyBytes<S>,
         sig: Signature<S>,
-        msg: &'msg M,
+        msg: &M,
     ) -> Self {
         // Compute c now to avoid dependency on the msg lifetime.
         let c = HStar::<S>::default()
@@ -82,10 +82,10 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
     }
 
     /// Create a batch item from a `Binding` signature.
-    pub fn from_binding<'msg, M: AsRef<[u8]>>(
+    pub fn from_binding<M: AsRef<[u8]>>(
         vk_bytes: VerificationKeyBytes<B>,
         sig: Signature<B>,
-        msg: &'msg M,
+        msg: &M,
     ) -> Self {
         // Compute c now to avoid dependency on the msg lifetime.
         let c = HStar::<B>::default()

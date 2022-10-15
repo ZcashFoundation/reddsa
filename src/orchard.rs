@@ -94,7 +94,7 @@ impl NonAdjacentForm for pallas::Scalar {
         let mut naf = [0i8; 256];
 
         let mut x_u64 = [0u64; 5];
-        LittleEndian::read_u64_into(&self.to_repr().as_ref(), &mut x_u64[0..4]);
+        LittleEndian::read_u64_into(self.to_repr().as_ref(), &mut x_u64[0..4]);
 
         let width = 1 << w;
         let window_mask = width - 1;
@@ -105,14 +105,13 @@ impl NonAdjacentForm for pallas::Scalar {
             // Construct a buffer of bits of the scalar, starting at bit `pos`
             let u64_idx = pos / 64;
             let bit_idx = pos % 64;
-            let bit_buf: u64;
-            if bit_idx < 64 - w {
+            let bit_buf = if bit_idx < 64 - w {
                 // This window's bits are contained in a single u64
-                bit_buf = x_u64[u64_idx] >> bit_idx;
+                x_u64[u64_idx] >> bit_idx
             } else {
                 // Combine the current u64's bits with the bits from the next u64
-                bit_buf = (x_u64[u64_idx] >> bit_idx) | (x_u64[1 + u64_idx] << (64 - bit_idx));
-            }
+                (x_u64[u64_idx] >> bit_idx) | (x_u64[1 + u64_idx] << (64 - bit_idx))
+            };
 
             // Add the carry into the current window
             let window = carry + (bit_buf & window_mask);
@@ -148,7 +147,7 @@ impl<'a> From<&'a pallas::Point> for LookupTable5<pallas::Point> {
         let mut Ai = [*A; 8];
         let A2 = A.double();
         for i in 0..7 {
-            Ai[i + 1] = &A2 + Ai[i];
+            Ai[i + 1] = A2 + Ai[i];
         }
         // Now Ai = [A, 3A, 5A, 7A, 9A, 11A, 13A, 15A]
         LookupTable5(Ai)
@@ -183,10 +182,11 @@ impl VartimeMultiscalarMul for pallas::Point {
             let mut t = r.double();
 
             for (naf, lookup_table) in nafs.iter().zip(lookup_tables.iter()) {
+                #[allow(clippy::comparison_chain)]
                 if naf[i] > 0 {
-                    t = &t + &lookup_table.select(naf[i] as usize);
+                    t += lookup_table.select(naf[i] as usize)
                 } else if naf[i] < 0 {
-                    t = &t - &lookup_table.select(-naf[i] as usize);
+                    t -= lookup_table.select(-naf[i] as usize);
                 }
             }
 
