@@ -9,11 +9,19 @@ use pasta_curves::pallas;
 
 use rand_core::{CryptoRng, RngCore};
 
-use frost_core::{frost, Ciphersuite, Field, Group, Scalar};
+use frost_core::{
+    frost::{self},
+    Ciphersuite, Field, Group,
+};
 
 pub use frost_core::Error;
 
-use crate::{hash::HStar, orchard, private::Sealed};
+use crate::{
+    hash::HStar,
+    orchard,
+    private::Sealed,
+    randomized_frost::{self, RandomizedParams},
+};
 
 #[derive(Clone, Copy)]
 /// An implementation of the FROST Pallas Blake2b-512 ciphersuite scalar field.
@@ -59,6 +67,10 @@ impl Field for PallasScalarField {
 
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
         scalar.to_repr().into()
+    }
+
+    fn little_endian_serialize(scalar: &Self::Scalar) -> Self::Serialization {
+        Self::serialize(scalar)
     }
 
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, Error> {
@@ -173,8 +185,8 @@ pub mod keys {
 
     ///
     pub fn keygen_with_dealer<RNG: RngCore + CryptoRng>(
-        num_signers: u8,
-        threshold: u8,
+        num_signers: u16,
+        threshold: u16,
         mut rng: RNG,
     ) -> Result<(Vec<SecretShare>, PublicKeyPackage), &'static str> {
         frost::keys::keygen_with_dealer(num_signers, threshold, &mut rng)
@@ -219,6 +231,8 @@ pub type SigningPackage = frost::SigningPackage<P>;
 
 ///
 pub mod round2 {
+    use crate::randomized_frost;
+
     use super::*;
 
     ///
@@ -232,8 +246,14 @@ pub mod round2 {
         signing_package: &SigningPackage,
         signer_nonces: &round1::SigningNonces,
         key_package: &keys::KeyPackage,
+        randomizer_point: &<<P as Ciphersuite>::Group as Group>::Element,
     ) -> Result<SignatureShare, &'static str> {
-        frost::round2::sign(signing_package, signer_nonces, key_package)
+        randomized_frost::sign(
+            signing_package,
+            signer_nonces,
+            key_package,
+            randomizer_point,
+        )
     }
 }
 
@@ -245,9 +265,14 @@ pub fn aggregate(
     signing_package: &round2::SigningPackage,
     signature_shares: &[round2::SignatureShare],
     pubkeys: &keys::PublicKeyPackage,
-    randomizer: Option<Scalar<P>>,
+    randomized_params: &RandomizedParams<P>,
 ) -> Result<Signature, &'static str> {
-    frost::aggregate(signing_package, signature_shares, pubkeys, randomizer)
+    randomized_frost::aggregate(
+        signing_package,
+        signature_shares,
+        pubkeys,
+        randomized_params,
+    )
 }
 
 ///
