@@ -2,7 +2,6 @@
 //!
 #![allow(non_snake_case)]
 
-use alloc::vec::Vec;
 use frost_core::{frost::keys::PublicKeyPackage, VerifyingKey};
 #[cfg(feature = "alloc")]
 use frost_core::{
@@ -12,56 +11,6 @@ use frost_core::{
 
 pub use frost_core::Error;
 use rand_core::{CryptoRng, RngCore};
-
-/// Compute the preimages to H3 to compute the per-signer rhos
-// We separate this out into its own method so it can be tested
-fn binding_factor_preimages<C: Ciphersuite>(
-    signing_package: &frost::SigningPackage<C>,
-    randomizer_point: &<C::Group as Group>::Element,
-) -> Vec<(frost::Identifier<C>, Vec<u8>)> {
-    let mut binding_factor_input_prefix = vec![];
-
-    binding_factor_input_prefix
-        .extend_from_slice(C::H4(signing_package.message().as_slice()).as_ref());
-    binding_factor_input_prefix.extend_from_slice(
-        C::H5(&frost::round1::encode_group_commitments(signing_package.signing_commitments())[..])
-            .as_ref(),
-    );
-    binding_factor_input_prefix
-        .extend_from_slice(<C::Group as Group>::serialize(randomizer_point).as_ref());
-
-    signing_package
-        .signing_commitments()
-        .iter()
-        .map(|c| {
-            let mut binding_factor_input = vec![];
-
-            binding_factor_input.extend_from_slice(&binding_factor_input_prefix);
-            binding_factor_input.extend_from_slice(c.identifier.serialize().as_ref());
-            (c.identifier, binding_factor_input)
-        })
-        .collect()
-}
-
-fn compute_binding_factor_list<C>(
-    signing_package: &frost::SigningPackage<C>,
-    randomizer_point: &<C::Group as Group>::Element,
-) -> frost::BindingFactorList<C>
-where
-    C: Ciphersuite,
-{
-    let preimages = binding_factor_preimages(signing_package, randomizer_point);
-
-    frost::BindingFactorList::new(
-        preimages
-            .iter()
-            .map(|(identifier, preimage)| {
-                let binding_factor = C::H1(preimage);
-                (*identifier, frost::BindingFactor::new(binding_factor))
-            })
-            .collect(),
-    )
-}
 
 /// Performed once by each participant selected for the signing operation.
 ///
@@ -85,7 +34,10 @@ pub fn sign<C: Ciphersuite>(
 
     // Encodes the signing commitment list produced in round one as part of generating [`Rho`], the
     // binding factor.
-    let binding_factor_list = compute_binding_factor_list(signing_package, randomizer_point);
+    let binding_factor_list = frost::compute_binding_factor_list(
+        signing_package,
+        <C::Group as Group>::serialize(randomizer_point).as_ref(),
+    );
 
     let rho: frost::BindingFactor<C> = binding_factor_list[key_package.identifier].clone();
 
@@ -103,15 +55,13 @@ pub fn sign<C: Ciphersuite>(
     );
 
     // Compute the Schnorr signature share.
-    let z_share: <<C::Group as Group>::Field as Field>::Scalar =
-        signer_nonces.hiding.clone().to_scalar()
-            + (signer_nonces.binding.clone().to_scalar() * rho.to_scalar())
-            + (lambda_i * key_package.secret_share.to_scalar() * challenge.to_scalar());
-
-    let signature_share = frost::round2::SignatureShare::<C> {
-        identifier: *key_package.identifier(),
-        signature: frost::round2::SignatureResponse::<C> { z_share },
-    };
+    let signature_share = frost::round2::compute_signature_share(
+        signer_nonces,
+        rho,
+        lambda_i,
+        key_package,
+        challenge,
+    );
 
     Ok(signature_share)
 }
@@ -144,8 +94,10 @@ where
 
     // Encodes the signing commitment list produced in round one as part of generating [`Rho`], the
     // binding factor.
-    let binding_factor_list =
-        compute_binding_factor_list(signing_package, randomized_params.randomizer_point());
+    let binding_factor_list = frost::compute_binding_factor_list(
+        signing_package,
+        <C::Group as Group>::serialize(randomized_params.randomizer_point()).as_ref(),
+    );
 
     // Compute the group commitment from signing commitments produced in round one.
     let group_commitment = frost::compute_group_commitment(signing_package, &binding_factor_list)?;
