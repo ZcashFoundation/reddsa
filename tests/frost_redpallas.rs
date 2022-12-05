@@ -16,3 +16,10 @@ fn check_randomized_sign_with_dealer() {
 
     frost::check_randomized_sign_with_dealer::<PallasBlake2b512, _>(rng);
 }
+
+#[test]
+fn check_sign_with_dkg() {
+    let rng = thread_rng();
+
+    frost_core::tests::check_sign_with_dkg::<PallasBlake2b512, _>(rng);
+}

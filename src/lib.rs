@@ -28,8 +28,6 @@ mod error;
 pub mod frost_redpallas;
 mod hash;
 pub mod orchard;
-#[cfg(feature = "std")]
-pub mod randomized_frost;
 pub mod sapling;
 #[cfg(feature = "alloc")]
 mod scalar_mul;

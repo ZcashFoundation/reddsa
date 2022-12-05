@@ -1,24 +1,22 @@
 use std::{collections::HashMap, convert::TryFrom};
 
-use frost_core::{frost, Ciphersuite};
+use frost_rerandomized::{self, frost_core::frost, frost_core::Ciphersuite, RandomizedParams};
 use rand_core::{CryptoRng, RngCore};
-use reddsa::{
-    frost_redpallas::*,
-    orchard,
-    randomized_frost::{self, RandomizedParams},
-};
+
+use reddsa::orchard;
 
 pub fn check_randomized_sign_with_dealer<C: Ciphersuite, R: RngCore + CryptoRng>(mut rng: R) {
     ////////////////////////////////////////////////////////////////////////////
     // Key generation
     ////////////////////////////////////////////////////////////////////////////
 
-    let numsigners = 5;
-    let threshold = 3;
-    let (shares, pubkeys) = keys::keygen_with_dealer(numsigners, threshold, &mut rng).unwrap();
+    let max_signers = 5;
+    let min_signers = 3;
+    let (shares, pubkeys) =
+        frost::keys::keygen_with_dealer(max_signers, min_signers, &mut rng).unwrap();
 
     // Verifies the secret shares from the dealer
-    let key_packages: HashMap<frost::Identifier<_>, frost::keys::KeyPackage<_>> = shares
+    let key_packages: HashMap<frost::Identifier<C>, frost::keys::KeyPackage<C>> = shares
         .into_iter()
         .map(|share| {
             (
@@ -28,8 +26,8 @@ pub fn check_randomized_sign_with_dealer<C: Ciphersuite, R: RngCore + CryptoRng>
         })
         .collect();
 
-    let mut nonces: HashMap<frost::Identifier<_>, frost::round1::SigningNonces<_>> = HashMap::new();
-    let mut commitments: HashMap<frost::Identifier<_>, frost::round1::SigningCommitments<_>> =
+    let mut nonces: HashMap<frost::Identifier<C>, frost::round1::SigningNonces<C>> = HashMap::new();
+    let mut commitments: HashMap<frost::Identifier<C>, frost::round1::SigningCommitments<C>> =
         HashMap::new();
 
     let randomizer_params = RandomizedParams::new(&pubkeys, &mut rng);
@@ -38,10 +36,10 @@ pub fn check_randomized_sign_with_dealer<C: Ciphersuite, R: RngCore + CryptoRng>
     // Round 1: generating nonces and signing commitments for each participant
     ////////////////////////////////////////////////////////////////////////////
 
-    for participant_index in 1..(threshold as u16 + 1) {
+    for participant_index in 1..(min_signers as u16 + 1) {
         let participant_identifier = participant_index.try_into().expect("should be nonzero");
         // Generate one (1) nonce and one SigningCommitments instance for each
-        // participant, up to _threshold_.
+        // participant, up to _min_signers_.
         let (nonce, commitment) = frost::round1::commit(
             participant_identifier,
             key_packages
@@ -72,7 +70,7 @@ pub fn check_randomized_sign_with_dealer<C: Ciphersuite, R: RngCore + CryptoRng>
         let nonces_to_use = &nonces.get(participant_identifier).unwrap();
 
         // Each participant generates their signature share.
-        let signature_share = randomized_frost::sign(
+        let signature_share = frost_rerandomized::sign(
             &signing_package,
             nonces_to_use,
             key_package,
@@ -88,7 +86,7 @@ pub fn check_randomized_sign_with_dealer<C: Ciphersuite, R: RngCore + CryptoRng>
     ////////////////////////////////////////////////////////////////////////////
 
     // Aggregate (also verifies the signature shares)
-    let group_signature_res = randomized_frost::aggregate(
+    let group_signature_res = frost_rerandomized::aggregate(
         &signing_package,
         &signature_shares[..],
         &pubkeys,
@@ -113,11 +111,16 @@ pub fn check_randomized_sign_with_dealer<C: Ciphersuite, R: RngCore + CryptoRng>
     // public key (interoperability test)
 
     let sig = {
-        let bytes: [u8; 64] = group_signature.to_bytes();
+        let bytes: [u8; 64] = group_signature.to_bytes().as_ref().try_into().unwrap();
         reddsa::Signature::<orchard::SpendAuth>::from(bytes)
     };
     let pk_bytes = {
-        let bytes: [u8; 32] = randomizer_params.randomized_group_public_key().to_bytes();
+        let bytes: [u8; 32] = randomizer_params
+            .randomized_group_public_key()
+            .to_bytes()
+            .as_ref()
+            .try_into()
+            .unwrap();
         reddsa::VerificationKeyBytes::<orchard::SpendAuth>::from(bytes)
     };
 
