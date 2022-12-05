@@ -1,12 +1,9 @@
 use std::{collections::HashMap, convert::TryFrom};
 
-use frost_core::{frost, Ciphersuite};
+use frost_rerandomized::{self, frost_core::frost, frost_core::Ciphersuite, RandomizedParams};
 use rand_core::{CryptoRng, RngCore};
-use reddsa::{
-    frost_redpallas::*,
-    orchard,
-    randomized_frost::{self, RandomizedParams},
-};
+
+use reddsa::{frost_redpallas::*, orchard};
 
 pub fn check_randomized_sign_with_dealer<C: Ciphersuite, R: RngCore + CryptoRng>(mut rng: R) {
     ////////////////////////////////////////////////////////////////////////////
@@ -72,7 +69,7 @@ pub fn check_randomized_sign_with_dealer<C: Ciphersuite, R: RngCore + CryptoRng>
         let nonces_to_use = &nonces.get(participant_identifier).unwrap();
 
         // Each participant generates their signature share.
-        let signature_share = randomized_frost::sign(
+        let signature_share = frost_rerandomized::sign(
             &signing_package,
             nonces_to_use,
             key_package,
@@ -88,7 +85,7 @@ pub fn check_randomized_sign_with_dealer<C: Ciphersuite, R: RngCore + CryptoRng>
     ////////////////////////////////////////////////////////////////////////////
 
     // Aggregate (also verifies the signature shares)
-    let group_signature_res = randomized_frost::aggregate(
+    let group_signature_res = frost_rerandomized::aggregate(
         &signing_package,
         &signature_shares[..],
         &pubkeys,

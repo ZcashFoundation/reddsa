@@ -7,21 +7,15 @@ use group::GroupEncoding;
 use group::{ff::Field as FFField, ff::PrimeField, Group as FFGroup};
 use pasta_curves::pallas;
 
+pub use frost_rerandomized::frost_core::Error;
+use frost_rerandomized::{
+    frost_core::{frost, Ciphersuite, Field, Group},
+    RandomizedParams,
+};
+
 use rand_core::{CryptoRng, RngCore};
 
-use frost_core::{
-    frost::{self},
-    Ciphersuite, Field, Group,
-};
-
-pub use frost_core::Error;
-
-use crate::{
-    hash::HStar,
-    orchard,
-    private::Sealed,
-    randomized_frost::{self, RandomizedParams},
-};
+use crate::{hash::HStar, orchard, private::Sealed};
 
 #[derive(Clone, Copy)]
 /// An implementation of the FROST Pallas Blake2b-512 ciphersuite scalar field.
@@ -54,19 +48,8 @@ impl Field for PallasScalarField {
         Self::Scalar::random(rng)
     }
 
-    fn random_nonzero<R: RngCore + CryptoRng>(rng: &mut R) -> Self::Scalar {
-        loop {
-            let scalar = Self::Scalar::random(&mut *rng);
-
-            // This impl of `Eq` calls to `ConstantTimeEq` under the hood
-            if scalar != Self::Scalar::zero() {
-                return scalar;
-            }
-        }
-    }
-
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
-        scalar.to_repr().into()
+        scalar.to_repr()
     }
 
     fn little_endian_serialize(scalar: &Self::Scalar) -> Self::Serialization {
@@ -81,7 +64,7 @@ impl Field for PallasScalarField {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 /// An implementation of the FROST P-256 ciphersuite group.
 pub struct PallasGroup;
 
@@ -126,7 +109,7 @@ impl Group for PallasGroup {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 /// An implementation of the FROST ciphersuite FROST(Pallas, BLAKE2b-512).
 pub struct PallasBlake2b512;
 
@@ -188,7 +171,7 @@ pub mod keys {
         num_signers: u16,
         threshold: u16,
         mut rng: RNG,
-    ) -> Result<(Vec<SecretShare>, PublicKeyPackage), &'static str> {
+    ) -> Result<(Vec<SecretShare>, PublicKeyPackage), Error> {
         frost::keys::keygen_with_dealer(num_signers, threshold, &mut rng)
     }
 
@@ -204,7 +187,7 @@ pub mod keys {
 
 ///
 pub mod round1 {
-    use frost_core::frost::keys::SigningShare;
+    use frost_rerandomized::frost_core::frost::keys::SigningShare;
 
     use super::*;
     ///
@@ -231,8 +214,6 @@ pub type SigningPackage = frost::SigningPackage<P>;
 
 ///
 pub mod round2 {
-    use crate::randomized_frost;
-
     use super::*;
 
     ///
@@ -247,8 +228,8 @@ pub mod round2 {
         signer_nonces: &round1::SigningNonces,
         key_package: &keys::KeyPackage,
         randomizer_point: &<<P as Ciphersuite>::Group as Group>::Element,
-    ) -> Result<SignatureShare, &'static str> {
-        randomized_frost::sign(
+    ) -> Result<SignatureShare, Error> {
+        frost_rerandomized::sign(
             signing_package,
             signer_nonces,
             key_package,
@@ -258,7 +239,7 @@ pub mod round2 {
 }
 
 ///
-pub type Signature = frost_core::Signature<P>;
+pub type Signature = frost_rerandomized::frost_core::Signature<P>;
 
 ///
 pub fn aggregate(
@@ -266,8 +247,8 @@ pub fn aggregate(
     signature_shares: &[round2::SignatureShare],
     pubkeys: &keys::PublicKeyPackage,
     randomized_params: &RandomizedParams<P>,
-) -> Result<Signature, &'static str> {
-    randomized_frost::aggregate(
+) -> Result<Signature, Error> {
+    frost_rerandomized::aggregate(
         signing_package,
         signature_shares,
         pubkeys,
@@ -276,7 +257,7 @@ pub fn aggregate(
 }
 
 ///
-pub type SigningKey = frost_core::SigningKey<P>;
+pub type SigningKey = frost_rerandomized::frost_core::SigningKey<P>;
 
 ///
-pub type VerifyingKey = frost_core::VerifyingKey<P>;
+pub type VerifyingKey = frost_rerandomized::frost_core::VerifyingKey<P>;
