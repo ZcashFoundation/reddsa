@@ -34,6 +34,8 @@ impl<T: SigType> Default for HStar<T> {
 }
 
 impl<T: SigType> HStar<T> {
+    // Only used by FROST code
+    #[allow(unused)]
     pub(crate) fn new(personalization_string: &[u8]) -> Self {
         let state = Params::new()
             .hash_length(64)
