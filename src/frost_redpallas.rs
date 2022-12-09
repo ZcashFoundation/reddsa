@@ -1,4 +1,4 @@
-//! Rerandomized FROST with RedPallas curve.
+//! Rerandomized FROST with Pallas curve.
 #![allow(non_snake_case)]
 #![deny(missing_docs)]
 
@@ -95,8 +95,14 @@ impl Group for PallasGroup {
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Element, Error> {
         let point = Self::Element::from_bytes(buf);
 
-        match Option::<_>::from(point) {
-            Some(point) => Ok(point),
+        match Option::<Self::Element>::from(point) {
+            Some(point) => {
+                if point == Self::identity() {
+                    Err(Error::InvalidIdentityElement)
+                } else {
+                    Ok(point)
+                }
+            }
             None => Err(Error::MalformedElement),
         }
     }

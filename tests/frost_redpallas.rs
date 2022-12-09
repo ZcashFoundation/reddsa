@@ -1,8 +1,12 @@
 #![cfg(feature = "frost")]
 
+use frost_rerandomized::frost_core::{Ciphersuite, Group};
 use rand::thread_rng;
 
-use reddsa::{frost_redpallas::PallasBlake2b512, orchard};
+use reddsa::{
+    frost_redpallas::{Error, PallasBlake2b512},
+    orchard,
+};
 
 #[test]
 fn check_sign_with_dealer() {
@@ -43,4 +47,31 @@ fn check_sign_with_dkg() {
     let rng = thread_rng();
 
     frost_rerandomized::frost_core::tests::check_sign_with_dkg::<PallasBlake2b512, _>(rng);
+}
+
+#[test]
+fn check_deserialize_identity() {
+    let encoded_identity = <PallasBlake2b512 as Ciphersuite>::Group::serialize(
+        &<PallasBlake2b512 as Ciphersuite>::Group::identity(),
+    );
+    let r = <PallasBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_identity);
+    assert_eq!(r, Err(Error::InvalidIdentityElement));
+}
+
+#[test]
+fn check_deserialize_non_canonical() {
+    let encoded_generator = <PallasBlake2b512 as Ciphersuite>::Group::serialize(
+        &<PallasBlake2b512 as Ciphersuite>::Group::generator(),
+    );
+    let r = <PallasBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_generator);
+    assert!(r.is_ok());
+
+    // This is x = p + 3 which is non-canonical and maps to a valid point.
+    let encoded_point =
+        hex::decode("04000000ed302d991bf94c09fc98462200000000000000000000000000000040")
+            .unwrap()
+            .try_into()
+            .unwrap();
+    let r = <PallasBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_point);
+    assert_eq!(r, Err(Error::MalformedElement));
 }

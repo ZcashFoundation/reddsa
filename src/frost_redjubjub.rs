@@ -1,4 +1,4 @@
-//! Rerandomized FROST with RedJubjub curve.
+//! Rerandomized FROST with Jubjub curve.
 #![allow(non_snake_case)]
 #![deny(missing_docs)]
 
@@ -94,8 +94,16 @@ impl Group for JubjubGroup {
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Element, Error> {
         let point = Self::Element::from_bytes(buf);
 
-        match Option::<_>::from(point) {
-            Some(point) => Ok(point),
+        match Option::<Self::Element>::from(point) {
+            Some(point) => {
+                if point == Self::identity() {
+                    Err(Error::InvalidIdentityElement)
+                } else if point.is_torsion_free().into() {
+                    Ok(point)
+                } else {
+                    Err(Error::InvalidNonPrimeOrderElement)
+                }
+            }
             None => Err(Error::MalformedElement),
         }
     }
