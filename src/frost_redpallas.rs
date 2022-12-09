@@ -74,14 +74,6 @@ impl Group for PallasGroup {
 
     type Element = pallas::Point;
 
-    /// [SEC 1][1] serialization of a compressed point in P-256 takes 33 bytes
-    /// (1-byte prefix and 32 bytes for the coordinate).
-    ///
-    /// Note that, in the P-256 spec, the identity is encoded as a single null byte;
-    /// but here we pad with zeroes. This is acceptable as the identity _should_ never
-    /// be serialized in FROST, else we error.
-    ///
-    /// [1]: https://secg.org/sec1-v2.pdf
     type Serialization = [u8; 32];
 
     fn cofactor() -> <Self::Field as Field>::Scalar {
