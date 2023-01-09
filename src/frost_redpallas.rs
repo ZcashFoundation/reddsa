@@ -18,8 +18,8 @@ use crate::{hash::HStar, orchard, private::Sealed};
 
 pub use frost_rerandomized::frost_core::Error;
 
-#[derive(Clone, Copy)]
 /// An implementation of the FROST(Pallas, BLAKE2b-512) ciphersuite scalar field.
+#[derive(Clone, Copy)]
 pub struct PallasScalarField;
 
 impl Field for PallasScalarField {
@@ -65,8 +65,8 @@ impl Field for PallasScalarField {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
 /// An implementation of the FROST(Pallas, BLAKE2b-512) ciphersuite group.
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PallasGroup;
 
 impl Group for PallasGroup {
@@ -108,8 +108,8 @@ impl Group for PallasGroup {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
 /// An implementation of the FROST(Pallas, BLAKE2b-512) ciphersuite.
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PallasBlake2b512;
 
 impl Ciphersuite for PallasBlake2b512 {
@@ -147,6 +147,7 @@ impl Ciphersuite for PallasBlake2b512 {
         *state.update(m).finalize().as_array()
     }
 
+    /// H5 for FROST(Pallas, BLAKE2b-512)
     fn H5(m: &[u8]) -> Self::HashOutput {
         let mut state = blake2b_simd::Params::new()
             .hash_length(64)
@@ -155,7 +156,7 @@ impl Ciphersuite for PallasBlake2b512 {
         *state.update(m).finalize().as_array()
     }
 
-    /// HDKG for FROST(ristretto255, SHA-512)
+    /// HDKG for FROST(Pallas, BLAKE2b-512)
     fn HDKG(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
         Some(
             HStar::<orchard::SpendAuth>::new(b"FROST_RedPallasD")

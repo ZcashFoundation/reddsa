@@ -18,8 +18,8 @@ let max_signers = 5;
 let min_signers = 3;
 let (shares, pubkeys) = frost::keys::keygen_with_dealer(max_signers, min_signers, &mut rng)?;
 
-// Verifies the secret shares from the dealer and store them in a HashMap.
-// In practice, the KeyPackages must be sent to its respective participants
+// Verifies the secret shares from the dealer and stores them in a HashMap.
+// In practice, each KeyPackage must be sent to its respective participant
 // through a confidential and authenticated channel.
 let key_packages: HashMap<_, _> = shares
     .into_iter()
@@ -43,7 +43,7 @@ for participant_index in 1..(min_signers as u16 + 1) {
         key_packages[&participant_identifier].secret_share(),
         &mut rng,
     );
-    // In practice, the nonces and commitment must be sent to the coordinator
+    // In practice, the nonces and commitments must be sent to the coordinator
     // (or to every other participant if there is no coordinator) using
     // an authenticated channel.
     nonces.insert(participant_identifier, nonce);
@@ -58,7 +58,7 @@ let message = "message to sign".as_bytes();
 let comms = commitments.clone().into_values().collect();
 // In practice, the SigningPackage must be sent to all participants
 // involved in the current signing (at least min_signers participants),
-// using an authenticate channel (and confidential if the message is secret).
+// using an authenticated channel (and confidential if the message is secret).
 let signing_package = frost::SigningPackage::new(comms, message.to_vec());
 
 ////////////////////////////////////////////////////////////////////////////
