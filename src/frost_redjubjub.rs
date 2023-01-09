@@ -7,7 +7,7 @@ use group::GroupEncoding;
 use group::{ff::Field as FFField, ff::PrimeField};
 
 use frost_rerandomized::{
-    frost_core::{frost, Ciphersuite, Field, Group},
+    frost_core::{frost, Ciphersuite, Field, FieldError, Group, GroupError},
     RandomizedParams,
 };
 
@@ -15,7 +15,8 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::{hash::HStar, private::Sealed, sapling};
 
-pub use frost_rerandomized::frost_core::Error;
+/// An error.
+pub type Error = frost_rerandomized::frost_core::Error<JubjubBlake2b512>;
 
 /// An implementation of the FROST(Jubjub, BLAKE2b-512) ciphersuite scalar field.
 #[derive(Clone, Copy)]
@@ -34,11 +35,11 @@ impl Field for JubjubScalarField {
         Self::Scalar::one()
     }
 
-    fn invert(scalar: &Self::Scalar) -> Result<Self::Scalar, Error> {
+    fn invert(scalar: &Self::Scalar) -> Result<Self::Scalar, FieldError> {
         // [`Jubjub::Scalar`]'s Eq/PartialEq does a constant-time comparison using
         // `ConstantTimeEq`
         if *scalar == <Self as Field>::zero() {
-            Err(Error::InvalidZeroScalar)
+            Err(FieldError::InvalidZeroScalar)
         } else {
             Ok(Self::Scalar::invert(scalar).unwrap())
         }
@@ -56,10 +57,10 @@ impl Field for JubjubScalarField {
         Self::serialize(scalar)
     }
 
-    fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, Error> {
+    fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, FieldError> {
         match Self::Scalar::from_repr(*buf).into() {
             Some(s) => Ok(s),
-            None => Err(Error::MalformedScalar),
+            None => Err(FieldError::MalformedScalar),
         }
     }
 }
@@ -91,26 +92,26 @@ impl Group for JubjubGroup {
         element.to_bytes()
     }
 
-    fn deserialize(buf: &Self::Serialization) -> Result<Self::Element, Error> {
+    fn deserialize(buf: &Self::Serialization) -> Result<Self::Element, GroupError> {
         let point = Self::Element::from_bytes(buf);
 
         match Option::<Self::Element>::from(point) {
             Some(point) => {
                 if point == Self::identity() {
-                    Err(Error::InvalidIdentityElement)
+                    Err(GroupError::InvalidIdentityElement)
                 } else if point.is_torsion_free().into() {
                     Ok(point)
                 } else {
-                    Err(Error::InvalidNonPrimeOrderElement)
+                    Err(GroupError::InvalidNonPrimeOrderElement)
                 }
             }
-            None => Err(Error::MalformedElement),
+            None => Err(GroupError::MalformedElement),
         }
     }
 }
 
 /// An implementation of the FROST(Jubjub, BLAKE2b-512) ciphersuite.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct JubjubBlake2b512;
 
 impl Ciphersuite for JubjubBlake2b512 {

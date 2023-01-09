@@ -1,12 +1,9 @@
 #![cfg(feature = "frost")]
 
-use frost_rerandomized::frost_core::{Ciphersuite, Group};
+use frost_rerandomized::frost_core::{Ciphersuite, Group, GroupError};
 use rand::thread_rng;
 
-use reddsa::{
-    frost_redpallas::{Error, PallasBlake2b512},
-    orchard,
-};
+use reddsa::{frost_redpallas::PallasBlake2b512, orchard};
 
 #[test]
 fn check_sign_with_dealer() {
@@ -55,7 +52,7 @@ fn check_deserialize_identity() {
         &<PallasBlake2b512 as Ciphersuite>::Group::identity(),
     );
     let r = <PallasBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_identity);
-    assert_eq!(r, Err(Error::InvalidIdentityElement));
+    assert_eq!(r, Err(GroupError::InvalidIdentityElement));
 }
 
 #[test]
@@ -73,5 +70,5 @@ fn check_deserialize_non_canonical() {
             .try_into()
             .unwrap();
     let r = <PallasBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_point);
-    assert_eq!(r, Err(Error::MalformedElement));
+    assert_eq!(r, Err(GroupError::MalformedElement));
 }

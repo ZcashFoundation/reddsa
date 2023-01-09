@@ -1,9 +1,9 @@
 #![cfg(feature = "frost")]
 
-use frost_rerandomized::frost_core::{Ciphersuite, Group};
+use frost_rerandomized::frost_core::{Ciphersuite, Group, GroupError};
 use rand::thread_rng;
 
-use reddsa::{frost_redjubjub::Error, frost_redjubjub::JubjubBlake2b512, sapling};
+use reddsa::{frost_redjubjub::JubjubBlake2b512, sapling};
 
 #[test]
 fn check_sign_with_dealer() {
@@ -52,7 +52,7 @@ fn check_deserialize_identity() {
         &<JubjubBlake2b512 as Ciphersuite>::Group::identity(),
     );
     let r = <JubjubBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_identity);
-    assert_eq!(r, Err(Error::InvalidIdentityElement));
+    assert_eq!(r, Err(GroupError::InvalidIdentityElement));
 }
 
 #[test]
@@ -70,7 +70,7 @@ fn check_deserialize_non_canonical() {
             .try_into()
             .unwrap();
     let r = <JubjubBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_point);
-    assert_eq!(r, Err(Error::MalformedElement));
+    assert_eq!(r, Err(GroupError::MalformedElement));
 }
 
 #[test]
@@ -81,5 +81,5 @@ fn check_deserialize_non_prime_order() {
             .try_into()
             .unwrap();
     let r = <JubjubBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_point);
-    assert_eq!(r, Err(Error::InvalidNonPrimeOrderElement));
+    assert_eq!(r, Err(GroupError::InvalidNonPrimeOrderElement));
 }
