@@ -39,7 +39,7 @@ optional = true
 
 [dev-dependencies]
 bincode = "1"
-criterion = "0.3"
+criterion = "0.4"
 hex = "0.4.3"
 proptest-derive = "0.3"
 lazy_static = "1.4"
