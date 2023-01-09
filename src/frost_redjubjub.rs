@@ -17,8 +17,8 @@ use crate::{hash::HStar, private::Sealed, sapling};
 
 pub use frost_rerandomized::frost_core::Error;
 
-#[derive(Clone, Copy)]
 /// An implementation of the FROST(Jubjub, BLAKE2b-512) ciphersuite scalar field.
+#[derive(Clone, Copy)]
 pub struct JubjubScalarField;
 
 impl Field for JubjubScalarField {
@@ -64,8 +64,8 @@ impl Field for JubjubScalarField {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
 /// An implementation of the FROST(Jubjub, BLAKE2b-512) ciphersuite group.
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct JubjubGroup;
 
 impl Group for JubjubGroup {
@@ -109,8 +109,8 @@ impl Group for JubjubGroup {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
 /// An implementation of the FROST(Jubjub, BLAKE2b-512) ciphersuite.
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct JubjubBlake2b512;
 
 impl Ciphersuite for JubjubBlake2b512 {
@@ -148,6 +148,7 @@ impl Ciphersuite for JubjubBlake2b512 {
         *state.update(m).finalize().as_array()
     }
 
+    /// H5 for FROST(Jubjub, BLAKE2b-512)
     fn H5(m: &[u8]) -> Self::HashOutput {
         let mut state = blake2b_simd::Params::new()
             .hash_length(64)
@@ -156,7 +157,7 @@ impl Ciphersuite for JubjubBlake2b512 {
         *state.update(m).finalize().as_array()
     }
 
-    /// HDKG for FROST(ristretto255, SHA-512)
+    /// HDKG for FROST(Jubjub, BLAKE2b-512)
     fn HDKG(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
         Some(
             HStar::<sapling::SpendAuth>::new(b"FROST_RedJubjubD")
