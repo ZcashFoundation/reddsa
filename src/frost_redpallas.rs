@@ -50,6 +50,9 @@ impl Field for PallasScalarField {
     }
 
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
+        // to_repr() endianess is implementation-specific, but this is OK since
+        // it is specific to [`pallas::Scalar`] which uses little-endian and that
+        // is what we want.
         scalar.to_repr()
     }
 

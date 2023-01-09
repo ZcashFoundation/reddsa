@@ -49,7 +49,7 @@ impl Field for JubjubScalarField {
     }
 
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
-        scalar.to_repr()
+        scalar.to_bytes()
     }
 
     fn little_endian_serialize(scalar: &Self::Scalar) -> Self::Serialization {
