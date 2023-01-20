@@ -10,6 +10,7 @@
 
 use core::{
     convert::{TryFrom, TryInto},
+    fmt,
     hash::Hash,
     marker::PhantomData,
 };
@@ -24,11 +25,26 @@ use crate::{Error, Randomizer, SigType, Signature, SpendAuth};
 /// This is useful for representing a compressed verification key; the
 /// [`VerificationKey`] type in this library holds other decompressed state
 /// used in signature verification.
-#[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VerificationKeyBytes<T: SigType> {
     pub(crate) bytes: [u8; 32],
     pub(crate) _marker: PhantomData<T>,
+}
+
+impl<T: SigType> fmt::Debug for VerificationKeyBytes<T> {
+    #[cfg(feature = "alloc")]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("VerificationKeyBytes")
+            .field("bytes", &hex::encode(&self.bytes))
+            .finish()
+    }
+    #[cfg(not(feature = "alloc"))]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("VerificationKeyBytes")
+            .field("bytes", &self.bytes)
+            .finish()
+    }
 }
 
 impl<T: SigType> From<[u8; 32]> for VerificationKeyBytes<T> {

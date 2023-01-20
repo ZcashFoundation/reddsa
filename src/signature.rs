@@ -8,17 +8,34 @@
 // - Henry de Valence <hdevalence@hdevalence.ca>
 
 //! RedDSA Signatures
-use core::marker::PhantomData;
+use core::{fmt, marker::PhantomData};
 
 use crate::SigType;
 
 /// A RedDSA signature.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Signature<T: SigType> {
     pub(crate) r_bytes: [u8; 32],
     pub(crate) s_bytes: [u8; 32],
     pub(crate) _marker: PhantomData<T>,
+}
+
+impl<T: SigType> fmt::Debug for Signature<T> {
+    #[cfg(feature = "alloc")]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Signature")
+            .field("r_bytes", &hex::encode(&self.r_bytes))
+            .field("s_bytes", &hex::encode(&self.s_bytes))
+            .finish()
+    }
+    #[cfg(not(feature = "alloc"))]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Signature")
+            .field("r_bytes", &self.r_bytes)
+            .field("s_bytes", &self.s_bytes)
+            .finish()
+    }
 }
 
 impl<T: SigType> From<[u8; 64]> for Signature<T> {
