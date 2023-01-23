@@ -17,7 +17,7 @@ use core::{
 
 use group::{cofactor::CofactorGroup, ff::PrimeField, GroupEncoding};
 
-use crate::{Error, Randomizer, SigType, Signature, SpendAuth};
+use crate::{hex_if_possible, Error, Randomizer, SigType, Signature, SpendAuth};
 
 /// A refinement type for `[u8; 32]` indicating that the bytes represent
 /// an encoding of a RedDSA verification key.
@@ -33,16 +33,9 @@ pub struct VerificationKeyBytes<T: SigType> {
 }
 
 impl<T: SigType> fmt::Debug for VerificationKeyBytes<T> {
-    #[cfg(feature = "alloc")]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("VerificationKeyBytes")
-            .field("bytes", &hex::encode(&self.bytes))
-            .finish()
-    }
-    #[cfg(not(feature = "alloc"))]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("VerificationKeyBytes")
-            .field("bytes", &self.bytes)
+            .field("bytes", &hex_if_possible(&self.bytes))
             .finish()
     }
 }

@@ -10,7 +10,7 @@
 //! RedDSA Signatures
 use core::{fmt, marker::PhantomData};
 
-use crate::SigType;
+use crate::{hex_if_possible, SigType};
 
 /// A RedDSA signature.
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -22,18 +22,10 @@ pub struct Signature<T: SigType> {
 }
 
 impl<T: SigType> fmt::Debug for Signature<T> {
-    #[cfg(feature = "alloc")]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Signature")
-            .field("r_bytes", &hex::encode(&self.r_bytes))
-            .field("s_bytes", &hex::encode(&self.s_bytes))
-            .finish()
-    }
-    #[cfg(not(feature = "alloc"))]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Signature")
-            .field("r_bytes", &self.r_bytes)
-            .field("s_bytes", &self.s_bytes)
+            .field("r_bytes", &hex_if_possible(&self.r_bytes))
+            .field("s_bytes", &hex_if_possible(&self.s_bytes))
             .finish()
     }
 }
