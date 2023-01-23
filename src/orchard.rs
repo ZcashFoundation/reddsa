@@ -15,7 +15,7 @@ use crate::{private, SigType};
 #[cfg(feature = "alloc")]
 use crate::scalar_mul::{LookupTable5, NonAdjacentForm, VartimeMultiscalarMul};
 
-/// The byte-encoding of the basepoint for `SpendAuthSig` on the [Pallas curve][pallasandvesta].
+/// The byte-encoding of the basepoint for the Orchard `SpendAuthSig` on the [Pallas curve][pallasandvesta].
 ///
 /// [pallasandvesta]: https://zips.z.cash/protocol/nu5.pdf#pallasandvesta
 // Reproducible by pallas::Point::hash_to_curve("z.cash:Orchard")(b"G").to_bytes()
