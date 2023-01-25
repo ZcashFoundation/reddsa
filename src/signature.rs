@@ -6,6 +6,7 @@
 //
 // Authors:
 // - Henry de Valence <hdevalence@hdevalence.ca>
+// - Conrado Gouvea <conradoplg@gmail.com>
 
 //! RedDSA Signatures
 use core::{fmt, marker::PhantomData};
