@@ -25,6 +25,7 @@ features = ["nightly"]
 blake2b_simd = { version = "1", default-features = false }
 byteorder = { version = "1.4", default-features = false }
 group = { version = "0.12", default-features = false }
+hex = { version = "0.4", optional = true, default-features = false, features = ["alloc"] }
 jubjub = { version = "0.9", default-features = false }
 pasta_curves = { version = "0.4", default-features = false }
 rand_core = { version = "0.6", default-features = false }
@@ -53,7 +54,7 @@ features = ["alloc"]
 [features]
 std = ["blake2b_simd/std", "thiserror", "zeroize", "alloc",
        "serde"] # conditional compilation for serde not complete (issue #9)
-alloc = []
+alloc = ["hex"]
 nightly = []
 default = ["std"]
 

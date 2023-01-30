@@ -30,8 +30,10 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::{private::SealedScalar, scalar_mul::VartimeMultiscalarMul, *};
 
-// Shim to generate a random 128bit value in a [u64; 4], without
-// importing `rand`.
+/// Shim to generate a random 128 bit value in a `[u64; 4]`, without
+/// importing `rand`.
+///
+/// The final 128 bits are zero.
 fn gen_128_bits<R: RngCore + CryptoRng>(mut rng: R) -> [u64; 4] {
     let mut bytes = [0u64; 4];
     bytes[0] = rng.next_u64();
@@ -39,13 +41,23 @@ fn gen_128_bits<R: RngCore + CryptoRng>(mut rng: R) -> [u64; 4] {
     bytes
 }
 
+/// Inner type of a batch verification item.
+///
+/// This struct exists to allow batch processing to be decoupled from the
+/// lifetime of the message. This is useful when using the batch verification
+/// API in an async context
+///
+/// The different enum variants are for the different signature types which use
+/// different basepoints for computation: SpendAuth and Binding signatures.
 #[derive(Clone, Debug)]
 enum Inner<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> {
+    /// A RedDSA signature using the SpendAuth generator group element.
     SpendAuth {
         vk_bytes: VerificationKeyBytes<S>,
         sig: Signature<S>,
         c: S::Scalar,
     },
+    /// A RedDSA signature using the Binding generator group element.
     Binding {
         vk_bytes: VerificationKeyBytes<B>,
         sig: Signature<B>,
