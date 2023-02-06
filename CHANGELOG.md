@@ -2,6 +2,15 @@
 
 Entries are listed in reverse chronological order.
 
+## 0.4.0
+
+* port improvements from Zebra (#40)
+* clippy fixes; remove old FROST code (#32)
+* Update `criterion` requirement from 0.3 to 0.4 (#29)
+* Label Zcash consensus rules in `reddsa` (#27)
+* Fix alloc feature (#28)
+* fix category (no\_std -> no-std) (#25)
+
 ## 0.3.0
 
 * Migrate to `group` 0.12, `jubjub` 0.9, `pasta_curves` 0.4

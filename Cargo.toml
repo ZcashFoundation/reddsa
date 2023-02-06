@@ -4,7 +4,7 @@ edition = "2021"
 # When releasing to crates.io:
 # - Update CHANGELOG.md
 # - Create git tag.
-version = "0.3.0"
+version = "0.4.0"
 authors = [
     "Henry de Valence <hdevalence@hdevalence.ca>",
     "Deirdre Connolly <durumcrustulum@gmail.com>",
@@ -25,6 +25,7 @@ features = ["nightly"]
 blake2b_simd = { version = "1", default-features = false }
 byteorder = { version = "1.4", default-features = false }
 group = { version = "0.12", default-features = false }
+hex = { version = "0.4", optional = true, default-features = false, features = ["alloc"] }
 jubjub = { version = "0.9", default-features = false }
 pasta_curves = { version = "0.4", default-features = false }
 rand_core = { version = "0.6", default-features = false }

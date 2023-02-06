@@ -10,6 +10,8 @@
 // - Henry de Valence <hdevalence@hdevalence.ca>
 // - Deirdre Connolly <deirdre@zfnd.org>
 
+//! Traits and types that support variable-time multiscalar multiplication.
+
 use alloc::vec::Vec;
 use core::{borrow::Borrow, fmt::Debug};
 
@@ -65,7 +67,9 @@ pub trait VartimeMultiscalarMul {
 impl NonAdjacentForm for jubjub::Scalar {
     /// Compute a width-\\(w\\) "Non-Adjacent Form" of this scalar.
     ///
-    /// Thanks to curve25519-dalek
+    /// Thanks to [`curve25519-dalek`].
+    ///
+    /// [`curve25519-dalek`]: https://github.com/dalek-cryptography/curve25519-dalek/blob/3e189820da03cc034f5fa143fc7b2ccb21fffa5e/src/scalar.rs#L907
     fn non_adjacent_form(&self, w: usize) -> [i8; 256] {
         // required by the NAF definition
         debug_assert!(w >= 2);
@@ -160,6 +164,16 @@ impl VartimeMultiscalarMul for ExtendedPoint {
     type Scalar = jubjub::Scalar;
     type Point = ExtendedPoint;
 
+    /// Variable-time multiscalar multiplication using a non-adjacent form of
+    /// width (5).
+    ///
+    /// The non-adjacent form has signed, odd digits.  Using only odd digits
+    /// halves the table size (since we only need odd multiples), or gives fewer
+    /// additions for the same table size.
+    ///
+    /// As the name implies, the runtime varies according to the values of the
+    /// inputs, thus is not safe for computing over secret data, but is great
+    /// for computing over public data, such as validating signatures.
     #[allow(non_snake_case)]
     fn optional_multiscalar_mul<I, J>(scalars: I, points: J) -> Option<ExtendedPoint>
     where

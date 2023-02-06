@@ -123,3 +123,15 @@ pub(crate) mod private {
         }
     }
 }
+
+/// Return the given byte array as a hex-encoded string.
+#[cfg(feature = "alloc")]
+pub(crate) fn hex_if_possible(bytes: &[u8]) -> alloc::string::String {
+    hex::encode(bytes)
+}
+
+/// Return the given byte array.
+#[cfg(not(feature = "alloc"))]
+pub(crate) fn hex_if_possible(bytes: &[u8]) -> &[u8] {
+    bytes
+}
