@@ -57,7 +57,7 @@ features = ["alloc"]
 [features]
 std = ["blake2b_simd/std", "thiserror", "zeroize", "alloc",
        "serde", "frost-rerandomized"] # conditional compilation for serde not complete (issue #9)
-alloc = []
+alloc = ["hex"]
 nightly = []
 frost = ["frost-rerandomized"]
 default = ["std"]
