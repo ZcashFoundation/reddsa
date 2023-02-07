@@ -25,9 +25,7 @@ pub mod batch;
 mod constants;
 mod error;
 #[cfg(feature = "frost")]
-pub mod frost_redjubjub;
-#[cfg(feature = "frost")]
-pub mod frost_redpallas;
+pub mod frost;
 mod hash;
 pub mod orchard;
 pub mod sapling;

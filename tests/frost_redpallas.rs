@@ -3,7 +3,7 @@
 use frost_rerandomized::frost_core::{Ciphersuite, Group, GroupError};
 use rand::thread_rng;
 
-use reddsa::{frost_redpallas::PallasBlake2b512, orchard};
+use reddsa::{frost::redpallas::PallasBlake2b512, orchard};
 
 #[test]
 fn check_sign_with_dealer() {

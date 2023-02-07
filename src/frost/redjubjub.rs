@@ -214,7 +214,7 @@ pub mod keys {
     pub type PublicKeyPackage = frost::keys::PublicKeyPackage<J>;
 
     pub mod dkg {
-        #![doc = include_str!("./frost_redjubjub/dkg.md")]
+        #![doc = include_str!("./redjubjub/dkg.md")]
         use super::*;
 
         /// The secret package that must be kept in memory by the participant

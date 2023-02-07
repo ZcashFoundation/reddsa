@@ -1,4 +1,4 @@
-An implementation of Schnorr signatures on the Pallas curve for both single and threshold numbers
+An implementation of Schnorr signatures on the Jubjub curve for both single and threshold numbers
 of signers (FROST).
 
 ## Example: key generation with trusted dealer and FROST signing
@@ -9,7 +9,7 @@ scenario in a single thread and it abstracts away any communication between peer
 
 
 ```rust
-use reddsa::frost_redpallas as frost;
+use reddsa::frost::redjubjub as frost;
 use rand::thread_rng;
 use std::collections::HashMap;
 

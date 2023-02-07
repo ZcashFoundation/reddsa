@@ -3,7 +3,7 @@
 use frost_rerandomized::frost_core::{Ciphersuite, Group, GroupError};
 use rand::thread_rng;
 
-use reddsa::{frost_redjubjub::JubjubBlake2b512, sapling};
+use reddsa::{frost::redjubjub::JubjubBlake2b512, sapling};
 
 #[test]
 fn check_sign_with_dealer() {

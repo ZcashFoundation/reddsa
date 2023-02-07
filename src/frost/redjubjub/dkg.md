@@ -28,7 +28,7 @@ they can proceed to sign messages with FROST.
 use rand::thread_rng;
 use std::collections::HashMap;
 
-use reddsa::frost_redpallas as frost;
+use reddsa::frost::redjubjub as frost;
 
 let mut rng = thread_rng();
 
