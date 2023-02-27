@@ -15,7 +15,7 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::{hash::HStar, private::Sealed, sapling};
 
-/// An error.
+/// An error type for the FROST(Jubjub, BLAKE2b-512) ciphersuite.
 pub type Error = frost_rerandomized::frost_core::Error<JubjubBlake2b512>;
 
 /// An implementation of the FROST(Jubjub, BLAKE2b-512) ciphersuite scalar field.
