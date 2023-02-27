@@ -31,8 +31,8 @@ pub struct SigningKey<T: SigType> {
     pk: VerificationKey<T>,
 }
 
-impl<'a, T: SigType> From<&'a SigningKey<T>> for VerificationKey<T> {
-    fn from(sk: &'a SigningKey<T>) -> VerificationKey<T> {
+impl<T: SigType> From<&SigningKey<T>> for VerificationKey<T> {
+    fn from(sk: &SigningKey<T>) -> VerificationKey<T> {
         sk.pk
     }
 }
