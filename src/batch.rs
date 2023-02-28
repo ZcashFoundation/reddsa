@@ -198,8 +198,8 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         let mut VKs = Vec::with_capacity(n);
         let mut R_coeffs = Vec::with_capacity(self.signatures.len());
         let mut Rs = Vec::with_capacity(self.signatures.len());
-        let mut P_spendauth_coeff = S::Scalar::zero();
-        let mut P_binding_coeff = B::Scalar::zero();
+        let mut P_spendauth_coeff = S::Scalar::ZERO;
+        let mut P_binding_coeff = B::Scalar::ZERO;
 
         for item in self.signatures.iter() {
             let (s_bytes, r_bytes, c) = match item.inner {
@@ -256,7 +256,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
             R_coeffs.push(z);
             Rs.push(R);
 
-            VK_coeffs.push(S::Scalar::zero() + (z * c));
+            VK_coeffs.push(S::Scalar::ZERO + (z * c));
             VKs.push(VK);
         }
 
