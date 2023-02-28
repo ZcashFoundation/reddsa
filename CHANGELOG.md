@@ -2,6 +2,10 @@
 
 Entries are listed in reverse chronological order.
 
+## Unreleased
+
+* Migrate to `group` 0.13, `jubjub` 0.10, `pasta_curves` 0.5
+
 ## 0.4.0
 
 * port improvements from Zebra (#40)

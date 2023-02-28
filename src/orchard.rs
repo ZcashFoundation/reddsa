@@ -57,7 +57,7 @@ impl super::Binding for Binding {}
 
 impl private::SealedScalar for pallas::Scalar {
     fn from_bytes_wide(bytes: &[u8; 64]) -> Self {
-        <pallas::Scalar as pasta_curves::arithmetic::FieldExt>::from_bytes_wide(bytes)
+        <pallas::Scalar as group::ff::FromUniformBytes<64>>::from_uniform_bytes(bytes)
     }
     fn from_raw(val: [u64; 4]) -> Self {
         pallas::Scalar::from_raw(val)
