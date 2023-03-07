@@ -2,7 +2,7 @@
 
 Entries are listed in reverse chronological order.
 
-## 0.4.1
+## 0.5.0
 
 * Add Pallas and Jubjub ciphersuites and FROST support (#33)
 * Migrate to `group` 0.13, `jubjub` 0.10, `pasta_curves` 0.5 (#44)
