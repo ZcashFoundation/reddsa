@@ -2,12 +2,14 @@
 
 Entries are listed in reverse chronological order.
 
-## Unreleased
+## 0.4.1
 
-* Migrate to `group` 0.13, `jubjub` 0.10, `pasta_curves` 0.5
+* Add Pallas and Jubjub ciphersuites and FROST support (#33)
+* Migrate to `group` 0.13, `jubjub` 0.10, `pasta_curves` 0.5 (#44)
 
 ## 0.4.0
 
+* MSRV is now 1.60.0 (note: this was noticed after the crate was released)
 * port improvements from Zebra (#40)
 * clippy fixes; remove old FROST code (#32)
 * Update `criterion` requirement from 0.3 to 0.4 (#29)
