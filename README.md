@@ -43,6 +43,11 @@ assert!(
 );
 ```
 
+## FROST
+
+You can enable ZIP-312 re-randomized FROST support with the `frost` feature.
+This is still experimental since ZIP-312 is still a draft.
+
 ## docs
 
 ```shell,no_run
