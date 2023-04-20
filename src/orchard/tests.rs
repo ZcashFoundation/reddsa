@@ -100,5 +100,5 @@ fn test_pallas_vartime_multiscalar_mul() {
         pallas::Point::from_bytes(&expected_res).expect("Could not deserialize a `pallas::Point`.");
 
     let res = pallas::Point::vartime_multiscalar_mul(scalars, points);
-    assert!(expected_res == res);
+    assert_eq!(expected_res, res);
 }

@@ -78,5 +78,5 @@ fn test_jubjub_vartime_multiscalar_mul() {
         .expect("Could not deserialize a `jubjub::ExtendedPoint`.");
 
     let res = ExtendedPoint::vartime_multiscalar_mul(scalars, points);
-    assert!(expected_res == res);
+    assert_eq!(expected_res, res);
 }
