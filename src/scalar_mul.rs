@@ -21,6 +21,9 @@ pub trait NonAdjacentForm {
     fn non_adjacent_form(&self, w: usize) -> [i8; 256];
 }
 
+#[cfg(test)]
+mod tests;
+
 /// A trait for variable-time multiscalar multiplication without precomputation.
 pub trait VartimeMultiscalarMul {
     /// The type of scalar being multiplied, e.g., `jubjub::Scalar`.

@@ -15,6 +15,9 @@ use crate::{private, SigType};
 #[cfg(feature = "alloc")]
 use crate::scalar_mul::{LookupTable5, NonAdjacentForm, VartimeMultiscalarMul};
 
+#[cfg(test)]
+mod tests;
+
 /// The byte-encoding of the basepoint for the Orchard `SpendAuthSig` on the [Pallas curve][pallasandvesta].
 ///
 /// [pallasandvesta]: https://zips.z.cash/protocol/nu5.pdf#pallasandvesta
@@ -198,32 +201,5 @@ impl VartimeMultiscalarMul for pallas::Point {
         }
 
         Some(r)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn orchard_spendauth_basepoint() {
-        use super::ORCHARD_SPENDAUTHSIG_BASEPOINT_BYTES;
-        use group::GroupEncoding;
-        use pasta_curves::{arithmetic::CurveExt, pallas};
-
-        assert_eq!(
-            pallas::Point::hash_to_curve("z.cash:Orchard")(b"G").to_bytes(),
-            ORCHARD_SPENDAUTHSIG_BASEPOINT_BYTES
-        );
-    }
-
-    #[test]
-    fn orchard_binding_basepoint() {
-        use super::ORCHARD_BINDINGSIG_BASEPOINT_BYTES;
-        use group::GroupEncoding;
-        use pasta_curves::{arithmetic::CurveExt, pallas};
-
-        assert_eq!(
-            pallas::Point::hash_to_curve("z.cash:Orchard-cv")(b"r").to_bytes(),
-            ORCHARD_BINDINGSIG_BASEPOINT_BYTES
-        );
     }
 }
