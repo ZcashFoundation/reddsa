@@ -55,6 +55,7 @@ fn orchard_binding_basepoint() {
 //     println!("{:?}", res.to_bytes());
 // }
 
+// Test vectors generated with `gen_pallas_data`
 #[test]
 fn test_pallas_vartime_multiscalar_mul() {
     let scalars: [[u8; 32]; 2] = [

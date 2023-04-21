@@ -33,6 +33,7 @@ use crate::scalar_mul::VartimeMultiscalarMul;
 //     println!("{:?}", res.to_bytes());
 // }
 
+// Test vectors generated with `gen_jubjub_data`
 #[test]
 fn test_jubjub_vartime_multiscalar_mul() {
     let scalars: [[u8; 32]; 2] = [
