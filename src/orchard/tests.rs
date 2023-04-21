@@ -82,7 +82,7 @@ fn test_pallas_vartime_multiscalar_mul() {
         ],
     ];
 
-    let expected_res: [u8; 32] = [
+    let expected_product: [u8; 32] = [
         68, 54, 98, 93, 238, 28, 229, 186, 127, 154, 101, 209, 216, 214, 66, 45, 141, 210, 70, 119,
         100, 245, 164, 155, 213, 45, 126, 17, 199, 8, 84, 143,
     ];
@@ -99,9 +99,9 @@ fn test_pallas_vartime_multiscalar_mul() {
         .map(|p| pallas::Point::from_bytes(&p).expect("Could not deserialize a `pallas::Point`."))
         .collect();
 
-    let expected_res =
-        pallas::Point::from_bytes(&expected_res).expect("Could not deserialize a `pallas::Point`.");
+    let expected_product = pallas::Point::from_bytes(&expected_product)
+        .expect("Could not deserialize a `pallas::Point`.");
 
-    let res = pallas::Point::vartime_multiscalar_mul(scalars, points);
-    assert_eq!(expected_res, res);
+    let product = pallas::Point::vartime_multiscalar_mul(scalars, points);
+    assert_eq!(expected_product, product);
 }

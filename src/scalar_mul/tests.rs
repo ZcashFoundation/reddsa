@@ -60,7 +60,7 @@ fn test_jubjub_vartime_multiscalar_mul() {
         ],
     ];
 
-    let expected_res: [u8; 32] = [
+    let expected_product: [u8; 32] = [
         64, 228, 212, 168, 76, 90, 248, 218, 86, 22, 182, 130, 227, 52, 170, 88, 220, 193, 166,
         131, 180, 48, 148, 72, 212, 148, 212, 240, 77, 244, 91, 213,
     ];
@@ -77,9 +77,9 @@ fn test_jubjub_vartime_multiscalar_mul() {
         })
         .collect();
 
-    let expected_res = ExtendedPoint::from_bytes(&expected_res)
+    let expected_product = ExtendedPoint::from_bytes(&expected_product)
         .expect("Could not deserialize a `jubjub::ExtendedPoint`.");
 
-    let res = ExtendedPoint::vartime_multiscalar_mul(scalars, points);
-    assert_eq!(expected_res, res);
+    let product = ExtendedPoint::vartime_multiscalar_mul(scalars, points);
+    assert_eq!(expected_product, product);
 }
