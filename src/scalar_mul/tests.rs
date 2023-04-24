@@ -1,15 +1,18 @@
 use alloc::vec::Vec;
-use group::GroupEncoding;
-use jubjub::{ExtendedPoint, Scalar};
+use group::{ff::Field, GroupEncoding};
+use num_bigint::BigInt;
+use num_traits::Zero;
+use rand::thread_rng;
 
 use crate::scalar_mul::VartimeMultiscalarMul;
+
+use super::NonAdjacentForm;
 
 /// Generates test vectors for [`test_jubjub_vartime_multiscalar_mul`].
 // #[test]
 #[allow(dead_code)]
 fn gen_jubjub_test_vectors() {
-    use group::{ff::Field, Group};
-    use rand::thread_rng;
+    use group::Group;
     use std::println;
 
     let rng = thread_rng();
@@ -86,4 +89,76 @@ fn test_jubjub_vartime_multiscalar_mul() {
 
     let product = jubjub::ExtendedPoint::vartime_multiscalar_mul(scalars, points);
     assert_eq!(expected_product, product);
+}
+
+/// Tests the non-adjacent form for a Jubjub scalar.
+#[test]
+fn test_non_adjacent_form() {
+    let rng = thread_rng();
+
+    let scalar = jubjub::Scalar::random(rng);
+    test_non_adjacent_form_for_scalar(5, scalar);
+}
+
+/// Tests the non-adjacent form for a particular scalar.
+pub(crate) fn test_non_adjacent_form_for_scalar<Scalar: NonAdjacentForm>(w: usize, scalar: Scalar) {
+    let naf = scalar.non_adjacent_form(w);
+    let naf_length = Scalar::naf_length();
+
+    // Check that the computed w-NAF has the intended length.
+    assert_eq!(naf.len(), naf_length);
+
+    let w = u32::try_from(w).expect("The window `w` did not fit into `u32`.");
+
+    // `bound` <- 2^(w-1)
+    let bound = 2_i32.pow(w - 1);
+
+    // `valid_coeffs` <- a range of odd integers from -2^(w-1) to 2^(w-1)
+    let valid_coeffs: Vec<i32> = (-bound..bound).filter(|x| x.rem_euclid(2) == 1).collect();
+
+    let mut reconstructed_scalar: BigInt = Zero::zero();
+
+    // Reconstruct the original scalar, and check two general invariants for any w-NAF along the
+    // way.
+    let mut i = 0;
+    while i < naf_length {
+        if naf[i] != 0 {
+            // In a w-NAF, every nonzero coefficient `naf[i]` is an odd signed integer with
+            // -2^(w-1) < `naf[i]` < 2^(w-1).
+            assert!(valid_coeffs.contains(&i32::from(naf[i])));
+
+            // Incrementally keep reconstructing the original scalar.
+            reconstructed_scalar += naf[i] * BigInt::from(2).pow(i.try_into().unwrap());
+
+            // In a w-NAF, at most one of any `w` consecutive coefficients is nonzero.
+            for _ in 1..w {
+                i += 1;
+                if i >= naf_length {
+                    break;
+                }
+                assert_eq!(naf[i], 0)
+            }
+        }
+
+        i += 1;
+    }
+
+    // Check that the reconstructed scalar is not negative, and convert it to little-endian bytes.
+    let reconstructed_scalar = reconstructed_scalar
+        .to_biguint()
+        .expect("The reconstructed scalar is negative.")
+        .to_bytes_le();
+
+    // Check that the reconstructed scalar is not too big.
+    assert!(reconstructed_scalar.len() <= 32);
+
+    // Convert the reconstructed scalar to a fixed byte array so we can compare it with the orginal
+    // scalar.
+    let mut reconstructed_scalar_bytes: [u8; 32] = [0; 32];
+    for (i, byte) in reconstructed_scalar.iter().enumerate() {
+        reconstructed_scalar_bytes[i] = *byte;
+    }
+
+    // Check that the reconstructed scalar matches the original one.
+    assert_eq!(reconstructed_scalar_bytes, scalar.inner_to_bytes());
 }
