@@ -17,12 +17,8 @@ use core::{borrow::Borrow, fmt::Debug};
 
 use jubjub::{ExtendedNielsPoint, ExtendedPoint};
 
-pub trait NonAdjacentForm {
-    fn non_adjacent_form(&self, w: usize) -> [i8; 256];
-}
-
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 /// A trait for variable-time multiscalar multiplication without precomputation.
 pub trait VartimeMultiscalarMul {
@@ -67,13 +63,33 @@ pub trait VartimeMultiscalarMul {
     }
 }
 
-impl NonAdjacentForm for jubjub::Scalar {
-    /// Compute a width-\\(w\\) "Non-Adjacent Form" of this scalar.
+/// Produces the non-adjacent form (NAF) of a 32-byte scalar.
+pub trait NonAdjacentForm {
+    /// Returns the scalar represented as a little-endian byte array.
+    fn inner_to_bytes(&self) -> [u8; 32];
+
+    /// Returns the number of coefficients in the NAF.
+    ///
+    /// Claim: The length of the NAF requires at most one more coefficient than the length of the
+    /// binary representation of the scalar. [^1]
+    ///
+    /// This trait works with scalars of at most 256 binary bits, so the default implementation
+    /// returns 257. However, some (sub)groups' orders don't reach 256 bits and their scalars don't
+    /// need the full 256 bits. Setting the corresponding NAF length for a particular curve will
+    /// speed up the multiscalar multiplication since the number of loop iterations required for the
+    /// multiplication is equal to the length of the NAF.
+    ///
+    /// [^1]: The proof is left as an exercise to the reader.
+    fn naf_length() -> usize {
+        257
+    }
+
+    /// Computes the width-`w` non-adjacent form (width-`w` NAF) of the scalar.
     ///
     /// Thanks to [`curve25519-dalek`].
     ///
     /// [`curve25519-dalek`]: https://github.com/dalek-cryptography/curve25519-dalek/blob/3e189820da03cc034f5fa143fc7b2ccb21fffa5e/src/scalar.rs#L907
-    fn non_adjacent_form(&self, w: usize) -> [i8; 256] {
+    fn non_adjacent_form(&self, w: usize) -> Vec<i8> {
         // required by the NAF definition
         debug_assert!(w >= 2);
         // required so that the NAF digits fit in i8
@@ -81,17 +97,19 @@ impl NonAdjacentForm for jubjub::Scalar {
 
         use byteorder::{ByteOrder, LittleEndian};
 
-        let mut naf = [0i8; 256];
+        let naf_length = Self::naf_length();
+        let mut naf = vec![0; naf_length];
 
         let mut x_u64 = [0u64; 5];
-        LittleEndian::read_u64_into(&self.to_bytes(), &mut x_u64[0..4]);
+        LittleEndian::read_u64_into(&self.inner_to_bytes(), &mut x_u64[0..4]);
 
         let width = 1 << w;
         let window_mask = width - 1;
 
         let mut pos = 0;
         let mut carry = 0;
-        while pos < 256 {
+
+        while pos < naf_length {
             // Construct a buffer of bits of the scalar, starting at bit `pos`
             let u64_idx = pos / 64;
             let bit_idx = pos % 64;
@@ -127,6 +145,17 @@ impl NonAdjacentForm for jubjub::Scalar {
         }
 
         naf
+    }
+}
+
+impl NonAdjacentForm for jubjub::Scalar {
+    fn inner_to_bytes(&self) -> [u8; 32] {
+        self.to_bytes()
+    }
+
+    /// The NAF length for Jubjub is 253 since Jubjub's order is about 2<sup>251.85</sup>.
+    fn naf_length() -> usize {
+        253
     }
 }
 
@@ -195,8 +224,9 @@ impl VartimeMultiscalarMul for ExtendedPoint {
             .collect::<Option<Vec<_>>>()?;
 
         let mut r = ExtendedPoint::identity();
+        let naf_size = Self::Scalar::naf_length();
 
-        for i in (0..256).rev() {
+        for i in (0..naf_size).rev() {
             let mut t = r.double();
 
             for (naf, lookup_table) in nafs.iter().zip(lookup_tables.iter()) {

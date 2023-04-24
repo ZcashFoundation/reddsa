@@ -87,63 +87,14 @@ impl private::Sealed<Binding> for Binding {
 
 #[cfg(feature = "alloc")]
 impl NonAdjacentForm for pallas::Scalar {
-    /// Compute a width-\\(w\\) "Non-Adjacent Form" of this scalar.
-    ///
-    /// Thanks to curve25519-dalek
-    fn non_adjacent_form(&self, w: usize) -> [i8; 256] {
-        // required by the NAF definition
-        debug_assert!(w >= 2);
-        // required so that the NAF digits fit in i8
-        debug_assert!(w <= 8);
+    fn inner_to_bytes(&self) -> [u8; 32] {
+        self.to_repr()
+    }
 
-        use byteorder::{ByteOrder, LittleEndian};
-
-        let mut naf = [0i8; 256];
-
-        let mut x_u64 = [0u64; 5];
-        LittleEndian::read_u64_into(self.to_repr().as_ref(), &mut x_u64[0..4]);
-
-        let width = 1 << w;
-        let window_mask = width - 1;
-
-        let mut pos = 0;
-        let mut carry = 0;
-        while pos < 256 {
-            // Construct a buffer of bits of the scalar, starting at bit `pos`
-            let u64_idx = pos / 64;
-            let bit_idx = pos % 64;
-            let bit_buf = if bit_idx < 64 - w {
-                // This window's bits are contained in a single u64
-                x_u64[u64_idx] >> bit_idx
-            } else {
-                // Combine the current u64's bits with the bits from the next u64
-                (x_u64[u64_idx] >> bit_idx) | (x_u64[1 + u64_idx] << (64 - bit_idx))
-            };
-
-            // Add the carry into the current window
-            let window = carry + (bit_buf & window_mask);
-
-            if window & 1 == 0 {
-                // If the window value is even, preserve the carry and continue.
-                // Why is the carry preserved?
-                // If carry == 0 and window & 1 == 0, then the next carry should be 0
-                // If carry == 1 and window & 1 == 0, then bit_buf & 1 == 1 so the next carry should be 1
-                pos += 1;
-                continue;
-            }
-
-            if window < width / 2 {
-                carry = 0;
-                naf[pos] = window as i8;
-            } else {
-                carry = 1;
-                naf[pos] = (window as i8).wrapping_sub(width as i8);
-            }
-
-            pos += w;
-        }
-
-        naf
+    /// The NAF length for Pallas is 255 since Pallas' order is about 2<sup>254</sup> +
+    /// 2<sup>125.1</sup>.
+    fn naf_length() -> usize {
+        255
     }
 }
 
@@ -184,14 +135,15 @@ impl VartimeMultiscalarMul for pallas::Point {
             .collect::<Option<Vec<_>>>()?;
 
         let mut r = pallas::Point::identity();
+        let naf_size = Self::Scalar::naf_length();
 
-        for i in (0..256).rev() {
+        for i in (0..naf_size).rev() {
             let mut t = r.double();
 
             for (naf, lookup_table) in nafs.iter().zip(lookup_tables.iter()) {
                 #[allow(clippy::comparison_chain)]
                 if naf[i] > 0 {
-                    t += lookup_table.select(naf[i] as usize)
+                    t += lookup_table.select(naf[i] as usize);
                 } else if naf[i] < 0 {
                     t -= lookup_table.select(-naf[i] as usize);
                 }
