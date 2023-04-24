@@ -14,22 +14,25 @@ fn gen_jubjub_test_vectors() {
 
     let rng = thread_rng();
 
-    let scalars = [Scalar::random(rng.clone()), Scalar::random(rng.clone())];
+    let scalars = [
+        jubjub::Scalar::random(rng.clone()),
+        jubjub::Scalar::random(rng.clone()),
+    ];
     println!("Scalars:");
     for scalar in scalars {
         println!("{:?}", scalar.to_bytes());
     }
 
     let points = [
-        ExtendedPoint::random(rng.clone()),
-        ExtendedPoint::random(rng),
+        jubjub::ExtendedPoint::random(rng.clone()),
+        jubjub::ExtendedPoint::random(rng),
     ];
     println!("Points:");
     for point in points {
         println!("{:?}", point.to_bytes());
     }
 
-    let res = ExtendedPoint::vartime_multiscalar_mul(scalars, points);
+    let res = jubjub::ExtendedPoint::vartime_multiscalar_mul(scalars, points);
     println!("Result:");
     println!("{:?}", res.to_bytes());
 }
@@ -65,21 +68,22 @@ fn test_jubjub_vartime_multiscalar_mul() {
         131, 180, 48, 148, 72, 212, 148, 212, 240, 77, 244, 91, 213,
     ];
 
-    let scalars: Vec<Scalar> = scalars
+    let scalars: Vec<jubjub::Scalar> = scalars
         .into_iter()
-        .map(|s| Scalar::from_bytes(&s).expect("Could not deserialize a `jubjub::Scalar`."))
+        .map(|s| jubjub::Scalar::from_bytes(&s).expect("Could not deserialize a `jubjub::Scalar`."))
         .collect();
 
-    let points: Vec<ExtendedPoint> = points
+    let points: Vec<jubjub::ExtendedPoint> = points
         .into_iter()
         .map(|p| {
-            ExtendedPoint::from_bytes(&p).expect("Could not deserialize a `jubjub::ExtendedPoint`.")
+            jubjub::ExtendedPoint::from_bytes(&p)
+                .expect("Could not deserialize a `jubjub::ExtendedPoint`.")
         })
         .collect();
 
-    let expected_product = ExtendedPoint::from_bytes(&expected_product)
+    let expected_product = jubjub::ExtendedPoint::from_bytes(&expected_product)
         .expect("Could not deserialize a `jubjub::ExtendedPoint`.");
 
-    let product = ExtendedPoint::vartime_multiscalar_mul(scalars, points);
+    let product = jubjub::ExtendedPoint::vartime_multiscalar_mul(scalars, points);
     assert_eq!(expected_product, product);
 }
