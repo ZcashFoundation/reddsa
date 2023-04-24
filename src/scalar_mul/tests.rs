@@ -144,13 +144,13 @@ pub(crate) fn test_non_adjacent_form_for_scalar<Scalar: NonAdjacentForm>(w: usiz
     }
 
     // Check that the reconstructed scalar is not negative, and convert it to little-endian bytes.
-    let reconstructed_scalar = reconstructed_scalar
+    let reconstructed_scalar: [u8; 32] = reconstructed_scalar
         .to_biguint()
         .expect("The reconstructed scalar is negative.")
-        .to_bytes_le();
-
-    let reconstructed_scalar_bytes: [u8; 32] = reconstructed_scalar.try_into().unwrap();
+        .to_bytes_le()
+        .try_into()
+        .expect("Could not convert the reconstructed scalar to bytes.");
 
     // Check that the reconstructed scalar matches the original one.
-    assert_eq!(reconstructed_scalar_bytes, scalar.inner_to_bytes());
+    assert_eq!(reconstructed_scalar, scalar.inner_to_bytes());
 }
