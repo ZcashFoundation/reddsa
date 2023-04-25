@@ -149,7 +149,15 @@ pub(crate) fn test_non_adjacent_form_for_scalar<Scalar: NonAdjacentForm>(w: usiz
         .expect("The reconstructed scalar is negative.")
         .to_bytes_le();
 
-    let reconstructed_scalar_bytes: [u8; 32] = reconstructed_scalar.try_into().unwrap();
+    // Check that the reconstructed scalar is not too big.
+    assert!(reconstructed_scalar.len() <= 32);
+
+    // Convert the reconstructed scalar to a fixed byte array so we can compare it with the orginal
+    // scalar.
+    let mut reconstructed_scalar_bytes: [u8; 32] = [0; 32];
+    for (i, byte) in reconstructed_scalar.iter().enumerate() {
+        reconstructed_scalar_bytes[i] = *byte;
+    }
 
     // Check that the reconstructed scalar matches the original one.
     assert_eq!(reconstructed_scalar_bytes, scalar.inner_to_bytes());
