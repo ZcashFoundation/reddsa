@@ -2,6 +2,12 @@
 
 Entries are listed in reverse chronological order.
 
+## 0.5.1
+
+* MSRV is now 1.65.0
+* Refactor & optimize the NAF (#63)
+* Updated `frost-rerandomized` to 0.6.0 (#67)
+
 ## 0.5.0
 
 * Add Pallas and Jubjub ciphersuites and FROST support (#33)
