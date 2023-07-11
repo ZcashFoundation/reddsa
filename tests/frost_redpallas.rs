@@ -9,7 +9,10 @@ use reddsa::{frost::redpallas::PallasBlake2b512, orchard};
 fn check_sign_with_dealer() {
     let rng = thread_rng();
 
-    frost_rerandomized::frost_core::tests::check_sign_with_dealer::<PallasBlake2b512, _>(rng);
+    frost_rerandomized::frost_core::tests::ciphersuite_generic::check_sign_with_dealer::<
+        PallasBlake2b512,
+        _,
+    >(rng);
 }
 
 #[test]
@@ -23,11 +26,11 @@ fn check_randomized_sign_with_dealer() {
     // public key (interoperability test)
 
     let sig = {
-        let bytes: [u8; 64] = group_signature.to_bytes().as_ref().try_into().unwrap();
+        let bytes: [u8; 64] = group_signature.serialize().as_ref().try_into().unwrap();
         reddsa::Signature::<orchard::SpendAuth>::from(bytes)
     };
     let pk_bytes = {
-        let bytes: [u8; 32] = group_pubkey.to_bytes().as_ref().try_into().unwrap();
+        let bytes: [u8; 32] = group_pubkey.serialize().as_ref().try_into().unwrap();
         reddsa::VerificationKeyBytes::<orchard::SpendAuth>::from(bytes)
     };
 
@@ -43,7 +46,10 @@ fn check_randomized_sign_with_dealer() {
 fn check_sign_with_dkg() {
     let rng = thread_rng();
 
-    frost_rerandomized::frost_core::tests::check_sign_with_dkg::<PallasBlake2b512, _>(rng);
+    frost_rerandomized::frost_core::tests::ciphersuite_generic::check_sign_with_dkg::<
+        PallasBlake2b512,
+        _,
+    >(rng);
 }
 
 #[test]

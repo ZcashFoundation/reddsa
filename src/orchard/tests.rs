@@ -1,3 +1,5 @@
+use std::println;
+
 use crate::scalar_mul::{self, VartimeMultiscalarMul};
 use alloc::vec::Vec;
 use group::ff::Field;
@@ -30,7 +32,6 @@ fn orchard_binding_basepoint() {
 #[allow(dead_code)]
 fn gen_pallas_test_vectors() {
     use group::Group;
-    use std::println;
 
     let rng = thread_rng();
 
