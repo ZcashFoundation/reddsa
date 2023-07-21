@@ -1,6 +1,7 @@
 use std::println;
 
 use crate::scalar_mul::{self, VartimeMultiscalarMul};
+use crate::{orchard, Signature, SigningKey, VerificationKey, VerificationKeyBytes};
 use alloc::vec::Vec;
 use group::ff::Field;
 use group::{ff::PrimeField, GroupEncoding};
@@ -8,6 +9,47 @@ use rand::thread_rng;
 
 use pasta_curves::arithmetic::CurveExt;
 use pasta_curves::pallas;
+
+#[test]
+fn orchard_sign() {
+    let msg =
+        hex::decode("8ca86a5e2f89da4dd6b8f26f740f360667ec1526cdb0ac7719ddd1c4a1e62981").unwrap();
+
+    // Generate a secret key and sign the message
+    let sk_bytes: [u8; 32] =
+        hex::decode("6a0df875bb9747883d518dd12223c986bb8166468263f0ab27f235c90d07db30")
+            .unwrap()
+            .try_into()
+            .unwrap();
+    let sk = SigningKey::<orchard::SpendAuth>::try_from(sk_bytes).unwrap();
+    let ak: VerificationKey<_> = (&sk).into();
+    let ak: VerificationKeyBytes<_> = ak.into();
+    let ak: [u8; 32] = ak.into();
+    println!("ak: {}", hex::encode(ak));
+
+    let randomizer_bytes: [u8; 32] =
+        hex::decode("10e10752b172b0bfbce1fcc577da34023b67749aa37c50845a35fdc04dc4d51f")
+            .unwrap()
+            .try_into()
+            .unwrap();
+    let randomizer = pasta_curves::pallas::Scalar::from_repr(randomizer_bytes).unwrap();
+
+    let sk = sk.randomize(&randomizer);
+
+    let sig = sk.sign(thread_rng(), &msg);
+
+    // Types can be converted to raw byte arrays using From/Into
+    let sig_bytes: [u8; 64] = sig.into();
+    println!("Signature: {}", hex::encode(sig_bytes));
+    let pk: VerificationKey<orchard::SpendAuth> = (&sk).into();
+    let pk_bytes: [u8; 32] = pk.into();
+
+    // Deserialize and verify the signature.
+    let sig: Signature<orchard::SpendAuth> = sig_bytes.into();
+    assert!(VerificationKey::try_from(pk_bytes)
+        .and_then(|pk| pk.verify(&msg, &sig))
+        .is_ok());
+}
 
 #[test]
 fn orchard_spendauth_basepoint() {
