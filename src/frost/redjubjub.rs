@@ -220,6 +220,8 @@ pub mod keys {
     ///
     /// Used for verification purposes before publishing a signature.
     pub type PublicKeyPackage = frost::keys::PublicKeyPackage<J>;
+
+    pub mod dkg;
 }
 
 /// FROST(Jubjub, BLAKE2b-512) Round 1 functionality and types.
