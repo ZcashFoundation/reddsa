@@ -15,7 +15,6 @@ jobs:
     - uses: actions-rs/cargo@v1.0.3
       with:
         command: test
-        args: --all-features
   test_nightly:
     name: test on nightly
     runs-on: ubuntu-latest
