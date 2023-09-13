@@ -173,6 +173,15 @@ impl Ciphersuite for JubjubBlake2b512 {
                 .finalize(),
         )
     }
+
+    /// HID for FROST(Jubjub, BLAKE2b-512)
+    fn HID(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
+        Some(
+            HStar::<sapling::SpendAuth>::new(b"FROST_RedJubjubI")
+                .update(m)
+                .finalize(),
+        )
+    }
 }
 
 // Shorthand alias for the ciphersuite

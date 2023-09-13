@@ -177,6 +177,15 @@ impl Ciphersuite for PallasBlake2b512 {
                 .finalize(),
         )
     }
+
+    /// HID for FROST(Pallas, BLAKE2b-512)
+    fn HID(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
+        Some(
+            HStar::<orchard::SpendAuth>::new(b"FROST_RedPallasI")
+                .update(m)
+                .finalize(),
+        )
+    }
 }
 
 // Shorthand alias for the ciphersuite
@@ -300,7 +309,13 @@ pub mod keys {
                 let pubkey = VerifyingKey::new(-pubkey.to_element());
                 let signing_share = SigningShare::new(-self.secret_share().to_scalar());
                 let verifying_share = VerifyingShare::new(-self.public().to_element());
-                KeyPackage::new(*self.identifier(), signing_share, verifying_share, pubkey)
+                KeyPackage::new(
+                    *self.identifier(),
+                    signing_share,
+                    verifying_share,
+                    pubkey,
+                    *self.min_signers(),
+                )
             } else {
                 self
             }
