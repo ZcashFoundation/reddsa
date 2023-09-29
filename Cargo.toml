@@ -2,11 +2,7 @@
 name = "reddsa"
 edition = "2021"
 rust-version = "1.65"
-# When releasing to crates.io:
-# - Update CHANGELOG.md
-# - Double check if the MSRV above (rust-version field) is equal to the version
-# used in main.yml `test_msrv`
-# - Create git tag.
+# Refer to DEVELOPERS.md for guidance on making new releases.
 version = "0.5.1"
 authors = [
     "Henry de Valence <hdevalence@hdevalence.ca>",
