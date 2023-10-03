@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.0.0
-    - uses: dtolnay/rust-toolchain@1.65.0
+    - uses: dtolnay/rust-toolchain@1.80.0
     # Don't use --all-features because `frost` has a higher MSRV and it's non-default.
     # Also don't run tests because some dev-dependencies have higher MSRVs.
     - run: cargo build
