@@ -3,7 +3,7 @@
 The DKG module supports generating FROST key shares in a distributed manner,
 without a trusted dealer.
 
-Before starting, each participant needs a unique identifier, which can be built from
+Before starting, each participant needs an unique identifier, which can be built from
 a `u16`. The process in which these identifiers are allocated is up to the application.
 
 The distributed key generation process has 3 parts, with 2 communication rounds
@@ -25,6 +25,7 @@ they can proceed to sign messages with FROST.
 ## Example
 
 ```rust
+# // ANCHOR: dkg_import
 use rand::thread_rng;
 use std::collections::HashMap;
 
@@ -32,12 +33,13 @@ use reddsa::frost::redjubjub as frost;
 
 let mut rng = thread_rng();
 
+let max_signers = 5;
+let min_signers = 3;
+# // ANCHOR_END: dkg_import
+
 ////////////////////////////////////////////////////////////////////////////
 // Key generation, Round 1
 ////////////////////////////////////////////////////////////////////////////
-
-let max_signers = 5;
-let min_signers = 3;
 
 // Keep track of each participant's round 1 secret package.
 // In practice each participant will keep its copy; no one
@@ -53,16 +55,18 @@ let mut received_round1_packages = HashMap::new();
 // In practice, each participant will perform this on their own environments.
 for participant_index in 1..=max_signers {
     let participant_identifier = participant_index.try_into().expect("should be nonzero");
-    let (secret_package, round1_package) = frost::keys::dkg::part1(
+    # // ANCHOR: dkg_part1
+    let (round1_secret_package, round1_package) = frost::keys::dkg::part1(
         participant_identifier,
         max_signers,
         min_signers,
         &mut rng,
     )?;
+    # // ANCHOR_END: dkg_part1
 
     // Store the participant's secret package for later use.
     // In practice each participant will store it in their own environment.
-    round1_secret_packages.insert(participant_identifier, secret_package);
+    round1_secret_packages.insert(participant_identifier, round1_secret_package);
 
     // "Send" the round 1 package to all other participants. In this
     // test this is simulated using a HashMap; in practice this will be
@@ -76,8 +80,8 @@ for participant_index in 1..=max_signers {
             .expect("should be nonzero");
         received_round1_packages
             .entry(receiver_participant_identifier)
-            .or_insert_with(Vec::new)
-            .push(round1_package.clone());
+            .or_insert_with(HashMap::new)
+            .insert(participant_identifier, round1_package.clone());
     }
 }
 
@@ -99,12 +103,14 @@ let mut received_round2_packages = HashMap::new();
 // In practice, each participant will perform this on their own environments.
 for participant_index in 1..=max_signers {
     let participant_identifier = participant_index.try_into().expect("should be nonzero");
-    let (round2_secret_package, round2_packages) = frost::keys::dkg::part2(
-        round1_secret_packages
-            .remove(&participant_identifier)
-            .unwrap(),
-        &received_round1_packages[&participant_identifier],
-    )?;
+    let round1_secret_package = round1_secret_packages
+        .remove(&participant_identifier)
+        .unwrap();
+    let round1_packages = &received_round1_packages[&participant_identifier];
+    # // ANCHOR: dkg_part2
+    let (round2_secret_package, round2_packages) =
+        frost::keys::dkg::part2(round1_secret_package, round1_packages)?;
+    # // ANCHOR_END: dkg_part2
 
     // Store the participant's secret package for later use.
     // In practice each participant will store it in their own environment.
@@ -115,11 +121,11 @@ for participant_index in 1..=max_signers {
     // sent through some communication channel.
     // Note that, in contrast to the previous part, here each other participant
     // gets its own specific package.
-    for round2_package in round2_packages {
+    for (receiver_identifier, round2_package) in round2_packages {
         received_round2_packages
-            .entry(round2_package.receiver_identifier)
-            .or_insert_with(Vec::new)
-            .push(round2_package);
+            .entry(receiver_identifier)
+            .or_insert_with(HashMap::new)
+            .insert(participant_identifier, round2_package);
     }
 }
 
@@ -142,13 +148,18 @@ let mut pubkey_packages = HashMap::new();
 // In practice, each participant will perform this on their own environments.
 for participant_index in 1..=max_signers {
     let participant_identifier = participant_index.try_into().expect("should be nonzero");
-    let (key_package, pubkey_package_for_participant) = frost::keys::dkg::part3(
-        &round2_secret_packages[&participant_identifier],
-        &received_round1_packages[&participant_identifier],
-        &received_round2_packages[&participant_identifier],
+    let round2_secret_package = &round2_secret_packages[&participant_identifier];
+    let round1_packages = &received_round1_packages[&participant_identifier];
+    let round2_packages = &received_round2_packages[&participant_identifier];
+    # // ANCHOR: dkg_part3
+    let (key_package, pubkey_package) = frost::keys::dkg::part3(
+        round2_secret_package,
+        round1_packages,
+        round2_packages,
     )?;
+    # // ANCHOR_END: dkg_part3
     key_packages.insert(participant_identifier, key_package);
-    pubkey_packages.insert(participant_identifier, pubkey_package_for_participant);
+    pubkey_packages.insert(participant_identifier, pubkey_package);
 }
 
 // With its own key package and the pubkey package, each participant can now proceed
