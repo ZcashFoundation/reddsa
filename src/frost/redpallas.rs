@@ -2,8 +2,9 @@
 #![allow(non_snake_case)]
 #![deny(missing_docs)]
 
-use std::collections::HashMap;
+use alloc::collections::BTreeMap;
 
+use frost_rerandomized::RandomizedCiphersuite;
 use group::GroupEncoding;
 #[cfg(feature = "alloc")]
 use group::{ff::Field as FFField, ff::PrimeField, Group as FFGroup};
@@ -13,7 +14,7 @@ use pasta_curves::pallas;
 #[cfg(feature = "serde")]
 pub use frost_rerandomized::frost_core::serde;
 pub use frost_rerandomized::frost_core::{
-    frost, Ciphersuite, Field, FieldError, Group, GroupError,
+    self as frost, Ciphersuite, Field, FieldError, Group, GroupError,
 };
 pub use rand_core;
 
@@ -188,6 +189,16 @@ impl Ciphersuite for PallasBlake2b512 {
     }
 }
 
+impl RandomizedCiphersuite for PallasBlake2b512 {
+    fn hash_randomizer(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
+        Some(
+            HStar::<orchard::SpendAuth>::new(b"FROST_RedPallasA")
+                .update(m)
+                .finalize(),
+        )
+    }
+}
+
 // Shorthand alias for the ciphersuite
 type P = PallasBlake2b512;
 
@@ -196,7 +207,7 @@ pub type Identifier = frost::Identifier<P>;
 
 /// FROST(Pallas, BLAKE2b-512) keys, key generation, key shares.
 pub mod keys {
-    use std::collections::HashMap;
+    use alloc::collections::BTreeMap;
 
     use super::*;
 
@@ -210,7 +221,7 @@ pub mod keys {
         min_signers: u16,
         identifiers: IdentifierList,
         mut rng: RNG,
-    ) -> Result<(HashMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
+    ) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
         frost::keys::generate_with_dealer(max_signers, min_signers, identifiers, &mut rng)
     }
 
@@ -226,7 +237,7 @@ pub mod keys {
         min_signers: u16,
         identifiers: IdentifierList,
         rng: &mut R,
-    ) -> Result<(HashMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
+    ) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
         frost::keys::split(key, max_signers, min_signers, identifiers, rng)
     }
 
@@ -282,19 +293,19 @@ pub mod keys {
 
     impl PositiveY for PublicKeyPackage {
         fn into_positive_y(self) -> Self {
-            let pubkey = self.group_public();
+            let pubkey = self.verifying_key();
             let pubkey_serialized = pubkey.serialize();
             if pubkey_serialized[31] & 0x80 != 0 {
                 let pubkey = VerifyingKey::new(-pubkey.to_element());
-                let signer_pubkeys: HashMap<_, _> = self
-                    .signer_pubkeys()
+                let verifying_shares: BTreeMap<_, _> = self
+                    .verifying_shares()
                     .iter()
                     .map(|(i, vs)| {
                         let vs = VerifyingShare::new(-vs.to_element());
                         (*i, vs)
                     })
                     .collect();
-                PublicKeyPackage::new(signer_pubkeys, pubkey)
+                PublicKeyPackage::new(verifying_shares, pubkey)
             } else {
                 self
             }
@@ -303,12 +314,12 @@ pub mod keys {
 
     impl PositiveY for KeyPackage {
         fn into_positive_y(self) -> Self {
-            let pubkey = self.group_public();
+            let pubkey = self.verifying_key();
             let pubkey_serialized = pubkey.serialize();
             if pubkey_serialized[31] & 0x80 != 0 {
                 let pubkey = VerifyingKey::new(-pubkey.to_element());
-                let signing_share = SigningShare::new(-self.secret_share().to_scalar());
-                let verifying_share = VerifyingShare::new(-self.public().to_element());
+                let signing_share = SigningShare::new(-self.signing_share().to_scalar());
+                let verifying_share = VerifyingShare::new(-self.verifying_share().to_element());
                 KeyPackage::new(
                     *self.identifier(),
                     signing_share,
@@ -328,7 +339,7 @@ pub mod keys {
 
 /// FROST(Pallas, BLAKE2b-512) Round 1 functionality and types.
 pub mod round1 {
-    use frost_rerandomized::frost_core::frost::keys::SigningShare;
+    use frost_rerandomized::frost_core::keys::SigningShare;
 
     use super::*;
     /// Comprised of FROST(Pallas, BLAKE2b-512) hiding and binding nonces.
@@ -418,7 +429,7 @@ pub type RandomizedParams = frost_rerandomized::RandomizedParams<P>;
 /// service attack due to publishing an invalid signature.
 pub fn aggregate(
     signing_package: &SigningPackage,
-    signature_shares: &HashMap<Identifier, round2::SignatureShare>,
+    signature_shares: &BTreeMap<Identifier, round2::SignatureShare>,
     pubkeys: &keys::PublicKeyPackage,
     randomized_params: &RandomizedParams,
 ) -> Result<Signature, Error> {

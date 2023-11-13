@@ -4,7 +4,7 @@
 //! The RTS is used to help a signer (participant) repair their lost share. This is achieved
 //! using a subset of the other signers know here as `helpers`.
 
-use std::collections::HashMap;
+use alloc::collections::BTreeMap;
 
 use jubjub::Scalar;
 
@@ -26,7 +26,7 @@ pub fn repair_share_step_1<C: Ciphersuite, R: RngCore + CryptoRng>(
     share_i: &SecretShare,
     rng: &mut R,
     participant: Identifier,
-) -> Result<HashMap<Identifier, Scalar>, Error> {
+) -> Result<BTreeMap<Identifier, Scalar>, Error> {
     frost::keys::repairable::repair_share_step_1(helpers, share_i, rng, participant)
 }
 
