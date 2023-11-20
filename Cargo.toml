@@ -35,9 +35,7 @@ pasta_curves = { version = "0.5", default-features = false }
 rand_core = { version = "0.6", default-features = false }
 serde = { version = "1", optional = true, features = ["derive"] }
 thiserror = { version = "1.0", optional = true }
-# frost-rerandomized = { version = "0.7.0", optional = true }
-# Pointing to a commit (re-export serde). TODO: Point to 1.0.0-rc.0 when it's out
-frost-rerandomized = { git = "https://github.com/ZcashFoundation/frost.git", rev = "e69002e0f671a4813e2dba7d6e1c7c72b9bb04ad", optional = true }
+frost-rerandomized = { version = "1.0.0-rc.0", optional = true }
 
 [dependencies.zeroize]
 version = "1"
@@ -56,9 +54,7 @@ rand_chacha = "0.3"
 serde_json = "1.0"
 num-bigint = "0.4.3"
 num-traits = "0.2.17"
-# frost-rerandomized = { version = "0.7.0", features = ["test-impl"] }
-# Pointing to a commit (re-export serde). TODO: Point to 1.0.0-rc.0 when it's out
-frost-rerandomized = { git = "https://github.com/ZcashFoundation/frost.git", rev = "e69002e0f671a4813e2dba7d6e1c7c72b9bb04ad", features = ["test-impl"] }
+frost-rerandomized = { version = "1.0.0-rc.0", features = ["test-impl"] }
 
 # `alloc` is only used in test code
 [dev-dependencies.pasta_curves]
