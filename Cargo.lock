@@ -391,9 +391,9 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "frost-core"
-version = "0.7.0"
+version = "1.0.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3b61d737e19bea0cedda9a11dab96ab1fd1e4016f707e8ee9018d8f17d2cd18"
+checksum = "eae732628620e7e52b3146df2eef3636f321b63dfba6e92b3b67147e0c5b2bb2"
 dependencies = [
  "byteorder",
  "const-crc32",
@@ -402,7 +402,7 @@ dependencies = [
  "derive-getters",
  "document-features",
  "hex",
- "itertools 0.11.0",
+ "itertools 0.12.0",
  "postcard",
  "proptest",
  "rand_core",
@@ -416,9 +416,9 @@ dependencies = [
 
 [[package]]
 name = "frost-rerandomized"
-version = "0.7.0"
+version = "1.0.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b45409d93cf5000f52ae64847a8a270a4562f1a035e74c3fae0e2462adb97ae"
+checksum = "abc9f0445f27262bd1e1d4754ad8ce7ac03c8d079704e6c696f5e40bab85d1e2"
 dependencies = [
  "derive-getters",
  "document-features",
@@ -517,9 +517,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+checksum = "25db6b064527c5d482d0423354fcd07a89a2dfe07b67892e62411946db7f07b0"
 dependencies = [
  "either",
 ]

@@ -2,7 +2,7 @@
 #![allow(non_snake_case)]
 #![deny(missing_docs)]
 
-use std::collections::HashMap;
+use alloc::collections::BTreeMap;
 
 use group::GroupEncoding;
 #[cfg(feature = "alloc")]
@@ -12,8 +12,9 @@ use group::{ff::Field as FFField, ff::PrimeField};
 #[cfg(feature = "serde")]
 pub use frost_rerandomized::frost_core::serde;
 pub use frost_rerandomized::frost_core::{
-    frost, Ciphersuite, Field, FieldError, Group, GroupError,
+    self as frost, Ciphersuite, Field, FieldError, Group, GroupError,
 };
+use frost_rerandomized::RandomizedCiphersuite;
 pub use rand_core;
 
 use rand_core::{CryptoRng, RngCore};
@@ -184,6 +185,16 @@ impl Ciphersuite for JubjubBlake2b512 {
     }
 }
 
+impl RandomizedCiphersuite for JubjubBlake2b512 {
+    fn hash_randomizer(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
+        Some(
+            HStar::<sapling::SpendAuth>::new(b"FROST_RedJubjubA")
+                .update(m)
+                .finalize(),
+        )
+    }
+}
+
 // Shorthand alias for the ciphersuite
 type J = JubjubBlake2b512;
 
@@ -192,7 +203,7 @@ pub type Identifier = frost::Identifier<J>;
 
 /// FROST(Jubjub, BLAKE2b-512) keys, key generation, key shares.
 pub mod keys {
-    use std::collections::HashMap;
+    use alloc::collections::BTreeMap;
 
     use super::*;
 
@@ -206,7 +217,7 @@ pub mod keys {
         min_signers: u16,
         identifiers: IdentifierList,
         mut rng: RNG,
-    ) -> Result<(HashMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
+    ) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
         frost::keys::generate_with_dealer(max_signers, min_signers, identifiers, &mut rng)
     }
 
@@ -222,7 +233,7 @@ pub mod keys {
         min_signers: u16,
         identifiers: IdentifierList,
         rng: &mut R,
-    ) -> Result<(HashMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
+    ) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
         frost::keys::split(key, max_signers, min_signers, identifiers, rng)
     }
 
@@ -275,7 +286,7 @@ pub mod keys {
 
 /// FROST(Jubjub, BLAKE2b-512) Round 1 functionality and types.
 pub mod round1 {
-    use frost_rerandomized::frost_core::frost::keys::SigningShare;
+    use frost_rerandomized::frost_core::keys::SigningShare;
 
     use super::*;
     /// Comprised of FROST(Jubjub, BLAKE2b-512) hiding and binding nonces.
@@ -365,7 +376,7 @@ pub type RandomizedParams = frost_rerandomized::RandomizedParams<J>;
 /// service attack due to publishing an invalid signature.
 pub fn aggregate(
     signing_package: &SigningPackage,
-    signature_shares: &HashMap<Identifier, round2::SignatureShare>,
+    signature_shares: &BTreeMap<Identifier, round2::SignatureShare>,
     pubkeys: &keys::PublicKeyPackage,
     randomized_params: &RandomizedParams,
 ) -> Result<Signature, Error> {
