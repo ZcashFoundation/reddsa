@@ -54,6 +54,11 @@ This is still experimental since ZIP-312 is still a draft.
 cargo doc --features "nightly" --open
 ```
 
+## Developers guide
+
+See [DEVELOPERS.md](DEVELOPERS.md).
+
+
 [reddsa]: https://zips.z.cash/protocol/protocol.pdf#concretereddsa
 [zebra]: https://github.com/ZcashFoundation/zebra
 [refinement]: https://en.wikipedia.org/wiki/Refinement_type
