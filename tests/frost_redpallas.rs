@@ -82,6 +82,8 @@ fn check_deserialize_non_canonical() {
 fn check_even_y_frost_core() {
     let mut rng = thread_rng();
 
+    // Since there is a 50% chance of the public key having an odd Y (which
+    // we need to actually test), loop until we get an odd Y.
     loop {
         let max_signers = 5;
         let min_signers = 3;
