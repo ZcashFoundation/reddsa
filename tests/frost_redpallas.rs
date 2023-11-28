@@ -1,18 +1,20 @@
 #![cfg(feature = "frost")]
 
-use frost_rerandomized::frost_core::{Ciphersuite, Group, GroupError};
+use std::collections::BTreeMap;
+
+use frost_rerandomized::frost_core::{self as frost, Ciphersuite, Group, GroupError};
 use rand::thread_rng;
 
-use reddsa::{frost::redpallas::PallasBlake2b512, orchard};
+use reddsa::{
+    frost::redpallas::{keys::EvenY, PallasBlake2b512},
+    orchard,
+};
 
 #[test]
 fn check_sign_with_dealer() {
     let rng = thread_rng();
 
-    frost_rerandomized::frost_core::tests::ciphersuite_generic::check_sign_with_dealer::<
-        PallasBlake2b512,
-        _,
-    >(rng);
+    frost::tests::ciphersuite_generic::check_sign_with_dealer::<PallasBlake2b512, _>(rng);
 }
 
 #[test]
@@ -46,10 +48,7 @@ fn check_randomized_sign_with_dealer() {
 fn check_sign_with_dkg() {
     let rng = thread_rng();
 
-    frost_rerandomized::frost_core::tests::ciphersuite_generic::check_sign_with_dkg::<
-        PallasBlake2b512,
-        _,
-    >(rng);
+    frost::tests::ciphersuite_generic::check_sign_with_dkg::<PallasBlake2b512, _>(rng);
 }
 
 #[test]
@@ -77,4 +76,113 @@ fn check_deserialize_non_canonical() {
             .unwrap();
     let r = <PallasBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_point);
     assert_eq!(r, Err(GroupError::MalformedElement));
+}
+
+#[test]
+fn check_even_y_frost_core() {
+    let mut rng = thread_rng();
+
+    // Since there is a 50% chance of the public key having an odd Y (which
+    // we need to actually test), loop until we get an odd Y.
+    loop {
+        let max_signers = 5;
+        let min_signers = 3;
+        // Generate keys with frost-core function, which doesn't ensure even Y
+        let (shares, public_key_package) =
+            frost::keys::generate_with_dealer::<PallasBlake2b512, _>(
+                max_signers,
+                min_signers,
+                frost::keys::IdentifierList::Default,
+                &mut rng,
+            )
+            .unwrap();
+
+        if !public_key_package.has_even_y() {
+            // Test consistency of into_even_y() for PublicKeyPackage
+            let even_public_key_package_is_even_none = public_key_package.clone().into_even_y(None);
+            let even_public_key_package_is_even_false =
+                public_key_package.clone().into_even_y(Some(false));
+            assert_eq!(
+                even_public_key_package_is_even_false,
+                even_public_key_package_is_even_none
+            );
+            assert_ne!(public_key_package, even_public_key_package_is_even_false);
+            assert_ne!(public_key_package, even_public_key_package_is_even_none);
+
+            // Test consistency of into_even_y() for SecretShare (arbitrarily on
+            // the first secret share)
+            let secret_share = shares.first_key_value().unwrap().1.clone();
+            let even_secret_share_is_even_none = secret_share.clone().into_even_y(None);
+            let even_secret_share_is_even_false = secret_share.clone().into_even_y(Some(false));
+            assert_eq!(
+                even_secret_share_is_even_false,
+                even_secret_share_is_even_none
+            );
+            assert_ne!(secret_share, even_secret_share_is_even_false);
+            assert_ne!(secret_share, even_secret_share_is_even_none);
+
+            // Make secret shares even, then convert into KeyPackages
+            let key_packages_evened_before: BTreeMap<_, _> = shares
+                .clone()
+                .into_iter()
+                .map(|(identifier, share)| {
+                    Ok((
+                        identifier,
+                        frost::keys::KeyPackage::try_from(share.into_even_y(None))?,
+                    ))
+                })
+                .collect::<Result<_, frost::Error<PallasBlake2b512>>>()
+                .unwrap();
+            // Convert into KeyPackages, then make them even
+            let key_packages_evened_after: BTreeMap<_, _> = shares
+                .into_iter()
+                .map(|(identifier, share)| {
+                    Ok((
+                        identifier,
+                        frost::keys::KeyPackage::try_from(share)?.into_even_y(None),
+                    ))
+                })
+                .collect::<Result<_, frost::Error<PallasBlake2b512>>>()
+                .unwrap();
+            // Make sure they are equal
+            assert_eq!(key_packages_evened_after, key_packages_evened_before);
+
+            // Check if signing works with evened keys
+            frost::tests::ciphersuite_generic::check_sign(
+                min_signers,
+                key_packages_evened_after,
+                &mut rng,
+                even_public_key_package_is_even_none,
+            )
+            .unwrap();
+
+            // We managed to test it; break the loop and return
+            break;
+        }
+    }
+}
+
+#[test]
+fn check_even_y_reddsa() {
+    let mut rng = thread_rng();
+
+    // Since there is a ~50% chance of having a odd Y internally, to make sure
+    // that odd Ys are converted to even, we test multiple times to increase
+    // the chance of an odd Y being generated internally
+    for _ in 0..16 {
+        let max_signers = 5;
+        let min_signers = 3;
+        // Generate keys with reexposed reddsa function, which ensures even Y
+        let (shares, public_key_package) =
+            reddsa::frost::redpallas::keys::generate_with_dealer::<_>(
+                max_signers,
+                min_signers,
+                frost::keys::IdentifierList::Default,
+                &mut rng,
+            )
+            .unwrap();
+
+        assert!(public_key_package.has_even_y());
+        assert!(shares.values().all(|s| s.has_even_y()));
+    }
 }
