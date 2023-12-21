@@ -70,3 +70,7 @@ default = ["std"]
 [[bench]]
 name = "bench"
 harness = false
+
+[[bench]]
+name = "frost"
+harness = false
