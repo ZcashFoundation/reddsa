@@ -6,8 +6,8 @@ use std::collections::BTreeMap;
 
 use rand_core::{CryptoRng, RngCore};
 
-use frost_rerandomized::frost_core as frost;
 use frost_rerandomized::frost_core::Ciphersuite;
+use frost_rerandomized::{frost_core as frost, RandomizedParams};
 
 /// Benchmark FROST signing with the specified ciphersuite.
 fn bench_rerandomized_sign<
@@ -98,6 +98,7 @@ fn bench_rerandomized_sign<
             &mut rng,
         )
         .unwrap();
+        let randomizer = *randomizer_params.randomizer();
 
         group.bench_with_input(
             BenchmarkId::new("Round 2", min_signers),
@@ -141,6 +142,11 @@ fn bench_rerandomized_sign<
             &(signing_package.clone(), signature_shares.clone(), pubkeys),
             |b, (signing_package, signature_shares, pubkeys)| {
                 b.iter(|| {
+                    // We want to include the time to generate the randomizer
+                    // params for the Coordinator. Since Aggregate is the only
+                    // Coordinator timing, we include it here.
+                    let randomizer_params =
+                        RandomizedParams::from_randomizer(pubkeys.verifying_key(), randomizer);
                     frost_rerandomized::aggregate(
                         signing_package,
                         signature_shares,
