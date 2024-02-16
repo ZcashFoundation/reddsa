@@ -332,9 +332,6 @@ pub mod round2 {
     /// shares into the joint signature.
     pub type SignatureShare = frost::round2::SignatureShare<J>;
 
-    /// A randomizer. A random scalar which is used to randomize the key.
-    pub type Randomizer = frost_rerandomized::Randomizer<J>;
-
     /// Performed once by each participant selected for the signing operation.
     ///
     /// Receives the message to be signed and a set of signing commitments and a set
@@ -358,6 +355,9 @@ pub type Signature = frost_rerandomized::frost_core::Signature<J>;
 
 /// Randomized parameters for a signing instance of randomized FROST.
 pub type RandomizedParams = frost_rerandomized::RandomizedParams<J>;
+
+/// A randomizer. A random scalar which is used to randomize the key.
+pub type Randomizer = frost_rerandomized::Randomizer<J>;
 
 /// Verifies each FROST(Jubjub, BLAKE2b-512) participant's signature share, and if all are valid,
 /// aggregates the shares into a signature to publish.
