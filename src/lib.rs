@@ -99,7 +99,7 @@ pub(crate) mod private {
         fn basepoint() -> T::Point;
     }
     impl Sealed<sapling::Binding> for sapling::Binding {
-        const H_STAR_PERSONALIZATION: &'static [u8; 16] = b"Zcash_RedJubjubH";
+        const H_STAR_PERSONALIZATION: &'static [u8; 16] = b"MASP__RedJubjubH";
         type Point = jubjub::ExtendedPoint;
         type Scalar = jubjub::Scalar;
 
@@ -110,7 +110,7 @@ pub(crate) mod private {
         }
     }
     impl Sealed<sapling::SpendAuth> for sapling::SpendAuth {
-        const H_STAR_PERSONALIZATION: &'static [u8; 16] = b"Zcash_RedJubjubH";
+        const H_STAR_PERSONALIZATION: &'static [u8; 16] = b"MASP__RedJubjubH";
         type Point = jubjub::ExtendedPoint;
         type Scalar = jubjub::Scalar;
 
