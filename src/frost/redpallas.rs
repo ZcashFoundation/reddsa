@@ -104,8 +104,11 @@ impl Group for PallasGroup {
         orchard::SpendAuth::basepoint()
     }
 
-    fn serialize(element: &Self::Element) -> Self::Serialization {
-        element.to_bytes()
+    fn serialize(element: &Self::Element) -> Result<Self::Serialization, GroupError> {
+        if *element == Self::identity() {
+            return Err(GroupError::InvalidIdentityElement);
+        }
+        Ok(element.to_bytes())
     }
 
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Element, GroupError> {
@@ -331,8 +334,11 @@ pub mod keys {
     impl EvenY for PublicKeyPackage {
         fn has_even_y(&self) -> bool {
             let verifying_key = self.verifying_key();
-            let verifying_key_serialized = verifying_key.serialize();
-            verifying_key_serialized[31] & 0x80 == 0
+            match verifying_key.serialize() {
+                Ok(verifying_key_serialized) => verifying_key_serialized[31] & 0x80 == 0,
+                // If serialization fails then it's the identity point, which has even Y
+                Err(_) => true,
+            }
         }
 
         fn into_even_y(self, is_even: Option<bool>) -> Self {
@@ -378,7 +384,10 @@ pub mod keys {
                     .commitment()
                     .coefficients()
                     .iter()
-                    .map(|e| <PallasBlake2b512 as Ciphersuite>::Group::serialize(&-e.value()))
+                    .map(|e| {
+                        <PallasBlake2b512 as Ciphersuite>::Group::serialize(&-e.value())
+                            .expect("none of the coefficients commitments are the identity")
+                    })
                     .collect();
                 let commitments = VerifiableSecretSharingCommitment::deserialize(coefficients)
                     .expect("Should work since they were just serialized");
@@ -392,8 +401,11 @@ pub mod keys {
     impl EvenY for KeyPackage {
         fn has_even_y(&self) -> bool {
             let pubkey = self.verifying_key();
-            let pubkey_serialized = pubkey.serialize();
-            pubkey_serialized[31] & 0x80 == 0
+            match pubkey.serialize() {
+                Ok(pubkey_serialized) => pubkey_serialized[31] & 0x80 == 0,
+                // If serialization fails then it's the identity point, which has even Y
+                Err(_) => true,
+            }
         }
 
         fn into_even_y(self, is_even: Option<bool>) -> Self {
