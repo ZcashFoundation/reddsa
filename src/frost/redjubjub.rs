@@ -94,8 +94,11 @@ impl Group for JubjubGroup {
         sapling::SpendAuth::basepoint()
     }
 
-    fn serialize(element: &Self::Element) -> Self::Serialization {
-        element.to_bytes()
+    fn serialize(element: &Self::Element) -> Result<Self::Serialization, GroupError> {
+        if *element == Self::identity() {
+            return Err(GroupError::InvalidIdentityElement);
+        }
+        Ok(element.to_bytes())
     }
 
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Element, GroupError> {

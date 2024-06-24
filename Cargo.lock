@@ -218,10 +218,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67ba02a97a2bd10f4b59b25c7973101c79642302776489e030cd13cdab09ed15"
 
 [[package]]
-name = "const-crc32"
-version = "1.3.0"
+name = "const-crc32-nostd"
+version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68d13f542d70e5b339bf46f6f74704ac052cfd526c58cd87996bd1ef4615b9a0"
+checksum = "808ac43170e95b11dd23d78aa9eaac5bea45776a602955552c4e833f3f0f823d"
 
 [[package]]
 name = "constant_time_eq"
@@ -322,13 +322,13 @@ checksum = "f400d0750c0c069e8493f2256cb4da6f604b6d2eeb69a0ca8863acde352f8400"
 
 [[package]]
 name = "derive-getters"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a2c35ab6e03642397cdda1dd58abbc05d418aef8e36297f336d5aba060fe8df"
+checksum = "0a6433aac097572ea8ccc60b3f2e756c661c9aeed9225cdd4d0cb119cb7ff6ba"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.46",
 ]
 
 [[package]]
@@ -391,38 +391,39 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "frost-core"
-version = "1.0.0"
+version = "2.0.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45d6280625f1603d160df24b23e4984a6a7286f41455ae606823d0104c32e834"
+checksum = "ed1383227a6606aacf5df9a17ff57824c6971a0ab225b69b911bec0ba7bbb869"
 dependencies = [
  "byteorder",
- "const-crc32",
+ "const-crc32-nostd",
  "criterion",
  "debugless-unwrap",
  "derive-getters",
  "document-features",
  "hex",
- "itertools 0.12.0",
+ "itertools 0.13.0",
  "postcard",
  "proptest",
  "rand_core",
  "serde",
  "serde_json",
  "serdect",
- "thiserror",
+ "thiserror-nostd-notrait",
  "visibility",
  "zeroize",
 ]
 
 [[package]]
 name = "frost-rerandomized"
-version = "1.0.0"
+version = "2.0.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52c58f58ea009000db490efd9a3936d0035647a2b00c7ba8f3868c2ed0306b0b"
+checksum = "bdb14a6054f9ce5aa4912c60c11392d42c43acec8295ee1df1f67a9d0b7a73ee"
 dependencies = [
  "derive-getters",
  "document-features",
  "frost-core",
+ "hex",
  "rand_core",
 ]
 
@@ -517,9 +518,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25db6b064527c5d482d0423354fcd07a89a2dfe07b67892e62411946db7f07b0"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -1101,6 +1102,26 @@ name = "thiserror-impl"
 version = "1.0.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46c3384250002a6d5af4d114f2845d37b57521033f30d5c3f46c4d70e1197533"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.46",
+]
+
+[[package]]
+name = "thiserror-nostd-notrait"
+version = "1.0.57"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8444e638022c44d2a9337031dee8acb732bcc7fbf52ac654edc236b26408b61"
+dependencies = [
+ "thiserror-nostd-notrait-impl",
+]
+
+[[package]]
+name = "thiserror-nostd-notrait-impl"
+version = "1.0.57"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "585e5ef40a784ce60b49c67d762110688d211d395d39e096be204535cf64590e"
 dependencies = [
  "proc-macro2",
  "quote",
