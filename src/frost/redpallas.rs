@@ -386,7 +386,7 @@ pub mod keys {
                     .iter()
                     .map(|e| {
                         <PallasBlake2b512 as Ciphersuite>::Group::serialize(&-e.value())
-                            .expect("none of the coefficients commitments are the identity")
+                            .expect("none of the coefficient commitments are the identity")
                     })
                     .collect();
                 let commitments = VerifiableSecretSharingCommitment::deserialize(coefficients)
