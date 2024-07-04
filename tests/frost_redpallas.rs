@@ -2,8 +2,10 @@
 
 use std::collections::BTreeMap;
 
-use frost_rerandomized::frost_core::{self as frost, Ciphersuite, Group, GroupError};
+use group::GroupEncoding;
 use rand::thread_rng;
+
+use frost_rerandomized::frost_core::{self as frost, Ciphersuite, Group, GroupError};
 
 use reddsa::{
     frost::redpallas::{keys::EvenY, PallasBlake2b512},
@@ -28,11 +30,11 @@ fn check_randomized_sign_with_dealer() {
     // public key (interoperability test)
 
     let sig = {
-        let bytes: [u8; 64] = group_signature.serialize().as_ref().try_into().unwrap();
+        let bytes: [u8; 64] = group_signature.serialize().unwrap().try_into().unwrap();
         reddsa::Signature::<orchard::SpendAuth>::from(bytes)
     };
     let pk_bytes = {
-        let bytes: [u8; 32] = group_pubkey.serialize().as_ref().try_into().unwrap();
+        let bytes: [u8; 32] = group_pubkey.serialize().unwrap().try_into().unwrap();
         reddsa::VerificationKeyBytes::<orchard::SpendAuth>::from(bytes)
     };
 
@@ -53,10 +55,12 @@ fn check_sign_with_dkg() {
 
 #[test]
 fn check_deserialize_identity() {
-    let encoded_identity = <PallasBlake2b512 as Ciphersuite>::Group::serialize(
+    let r = <PallasBlake2b512 as Ciphersuite>::Group::serialize(
         &<PallasBlake2b512 as Ciphersuite>::Group::identity(),
     );
-    let r = <PallasBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_identity);
+    assert_eq!(r, Err(GroupError::InvalidIdentityElement));
+    let raw_identity = <PallasBlake2b512 as Ciphersuite>::Group::identity();
+    let r = <PallasBlake2b512 as Ciphersuite>::Group::deserialize(&raw_identity.to_bytes());
     assert_eq!(r, Err(GroupError::InvalidIdentityElement));
 }
 
@@ -64,7 +68,8 @@ fn check_deserialize_identity() {
 fn check_deserialize_non_canonical() {
     let encoded_generator = <PallasBlake2b512 as Ciphersuite>::Group::serialize(
         &<PallasBlake2b512 as Ciphersuite>::Group::generator(),
-    );
+    )
+    .unwrap();
     let r = <PallasBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_generator);
     assert!(r.is_ok());
 

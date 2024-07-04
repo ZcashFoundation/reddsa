@@ -28,7 +28,7 @@ impl<T: SigType> Default for HStar<T> {
             .to_state();
         Self {
             state,
-            _marker: PhantomData::default(),
+            _marker: PhantomData,
         }
     }
 }
@@ -43,7 +43,7 @@ impl<T: SigType> HStar<T> {
             .to_state();
         Self {
             state,
-            _marker: PhantomData::default(),
+            _marker: PhantomData,
         }
     }
 
