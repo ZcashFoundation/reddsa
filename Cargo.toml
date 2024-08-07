@@ -63,7 +63,7 @@ std = ["blake2b_simd/std", "thiserror", "zeroize", "alloc",
        "serde"] # conditional compilation for serde not complete (issue #9)
 alloc = ["hex"]
 nightly = []
-frost = ["std", "frost-rerandomized"]
+frost = ["frost-rerandomized"]
 serde = ["dep:serde", "frost-rerandomized?/serde"]
 default = ["std"]
 
