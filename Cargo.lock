@@ -409,6 +409,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serdect",
+ "thiserror",
  "thiserror-nostd-notrait",
  "visibility",
  "zeroize",
