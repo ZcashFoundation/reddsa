@@ -326,8 +326,7 @@ pub mod keys {
 
         /// Convert the given type to make sure the group public key has an even
         /// Y coordinate. `is_even` can be specified if evenness was already
-        /// determined beforehand. Returns a boolean indicating if the original
-        /// type had an even Y, and a (possibly converted) value with even Y.
+        /// determined beforehand.
         fn into_even_y(self, is_even: Option<bool>) -> Self;
     }
 
@@ -502,13 +501,35 @@ pub mod round2 {
     ///
     /// Assumes the participant has already determined which nonce corresponds with
     /// the commitment that was assigned by the coordinator in the SigningPackage.
+    #[deprecated(
+        note = "switch to sign_with_randomizer_seed(), passing a seed generated with RandomizedParams::new_from_commitments()"
+    )]
     pub fn sign(
         signing_package: &SigningPackage,
         signer_nonces: &round1::SigningNonces,
         key_package: &keys::KeyPackage,
         randomizer: Randomizer,
     ) -> Result<SignatureShare, Error> {
+        #[allow(deprecated)]
         frost_rerandomized::sign(signing_package, signer_nonces, key_package, randomizer)
+    }
+
+    /// Re-randomized FROST signing using the given `randomizer_seed`, which should
+    /// be sent from the Coordinator using a confidential channel.
+    ///
+    /// See [`frost::round2::sign`] for documentation on the other parameters.
+    pub fn sign_with_randomizer_seed<C: RandomizedCiphersuite>(
+        signing_package: &SigningPackage,
+        signer_nonces: &round1::SigningNonces,
+        key_package: &keys::KeyPackage,
+        randomizer_seed: &[u8],
+    ) -> Result<SignatureShare, Error> {
+        frost_rerandomized::sign_with_randomizer_seed(
+            signing_package,
+            signer_nonces,
+            key_package,
+            randomizer_seed,
+        )
     }
 }
 
