@@ -92,5 +92,5 @@ fn check_deserialize_non_prime_order() {
             .try_into()
             .unwrap();
     let r = <JubjubBlake2b512 as Ciphersuite>::Group::deserialize(&encoded_point);
-    assert_eq!(r, Err(GroupError::InvalidNonPrimeOrderElement));
+    assert_eq!(r, Err(GroupError::MalformedElement));
 }

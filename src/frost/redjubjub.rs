@@ -6,7 +6,7 @@ use alloc::collections::BTreeMap;
 
 use group::GroupEncoding;
 #[cfg(feature = "alloc")]
-use group::{ff::Field as FFField, ff::PrimeField};
+use group::{ff::Field as _, ff::PrimeField, Group as _};
 
 // Re-exports in our public API
 #[cfg(feature = "serde")]
@@ -78,7 +78,7 @@ pub struct JubjubGroup;
 impl Group for JubjubGroup {
     type Field = JubjubScalarField;
 
-    type Element = jubjub::ExtendedPoint;
+    type Element = jubjub::SubgroupPoint;
 
     type Serialization = [u8; 32];
 
@@ -91,7 +91,11 @@ impl Group for JubjubGroup {
     }
 
     fn generator() -> Self::Element {
-        sapling::SpendAuth::basepoint()
+        let basepoint: jubjub::AffinePoint = sapling::SpendAuth::basepoint().into();
+        // This is safe because the basepoint is in the prime-order subgroup.
+        // This fact is checked in a test below.
+        // (We could call into_subgroup() but that's much slower.)
+        jubjub::SubgroupPoint::from_raw_unchecked(basepoint.get_u(), basepoint.get_v())
     }
 
     fn serialize(element: &Self::Element) -> Result<Self::Serialization, GroupError> {
@@ -108,10 +112,8 @@ impl Group for JubjubGroup {
             Some(point) => {
                 if point == Self::identity() {
                     Err(GroupError::InvalidIdentityElement)
-                } else if point.is_torsion_free().into() {
-                    Ok(point)
                 } else {
-                    Err(GroupError::InvalidNonPrimeOrderElement)
+                    Ok(point)
                 }
             }
             None => Err(GroupError::MalformedElement),
@@ -396,3 +398,18 @@ pub type SigningKey = frost_rerandomized::frost_core::SigningKey<J>;
 
 /// A valid verifying key for Schnorr signatures on FROST(Jubjub, BLAKE2b-512).
 pub type VerifyingKey = frost_rerandomized::frost_core::VerifyingKey<J>;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use group::cofactor::CofactorGroup;
+
+    #[test]
+    fn basepoint_is_in_prime_subgroup() {
+        let basepoint: jubjub::AffinePoint = sapling::SpendAuth::basepoint().into();
+        assert!(Into::<bool>::into(basepoint.is_prime_order()));
+        assert!(Into::<bool>::into(
+            basepoint.to_extended().into_subgroup().is_some()
+        ));
+    }
+}
