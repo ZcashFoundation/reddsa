@@ -39,7 +39,7 @@ features = ["zeroize_derive"]
 optional = true
 
 [dev-dependencies]
-bincode = "1"
+bincode = "2"
 criterion = "0.5"
 hex = "0.4.3"
 proptest-derive = "0.5"
