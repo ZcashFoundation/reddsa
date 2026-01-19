@@ -31,7 +31,7 @@ pasta_curves = { version = "0.5", default-features = false }
 rand_core = { version = "0.6", default-features = false }
 serde = { version = "1", optional = true, features = ["derive"] }
 thiserror = { version = "2.0", optional = true }
-frost-rerandomized = { version = "2.1.0", optional = true, default-features = false, features = ["serialization", "cheater-detection"] }
+frost-rerandomized = { version = "2.2.0", optional = true, default-features = false, features = ["serialization"] }
 
 [dependencies.zeroize]
 version = "1"
@@ -50,7 +50,7 @@ rand_chacha = "0.3"
 serde_json = "1.0"
 num-bigint = "0.4.6"
 num-traits = "0.2.19"
-frost-rerandomized = { version = "2.1.0", features = ["test-impl"] }
+frost-rerandomized = { version = "2.2.0", features = ["test-impl"] }
 
 # `alloc` is only used in test code
 [dev-dependencies.pasta_curves]
@@ -62,10 +62,11 @@ features = ["alloc"]
 std = ["blake2b_simd/std", "thiserror", "zeroize", "alloc", "frost-rerandomized?/std",
        "serde"] # conditional compilation for serde not complete (issue #9)
 alloc = ["hex"]
+cheater-detection = ["frost-rerandomized?/cheater-detection"]
 nightly = []
 frost = ["frost-rerandomized", "alloc"]
 serde = ["dep:serde", "frost-rerandomized?/serde"]
-default = ["std"]
+default = ["std", "cheater-detection"]
 
 [[bench]]
 name = "bench"
