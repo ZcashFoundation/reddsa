@@ -67,7 +67,7 @@ nightly = []
 frost = ["frost-rerandomized", "alloc"]
 cheater-detection = ["frost-rerandomized?/cheater-detection"]
 serde = ["dep:serde", "frost-rerandomized?/serde"]
-default = ["std", "cheater-detection"]
+default = ["std"]
 
 [[bench]]
 name = "bench"
