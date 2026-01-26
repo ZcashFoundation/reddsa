@@ -1,6 +1,13 @@
 An implementation of Schnorr signatures on the Pallas curve for both single and threshold numbers
 of signers (FROST).
 
+This crate is a re-export of the ciphersuite-generic
+[frost-core](https://crates.io/crates/frost-core) crate, parametrized with the
+Pallas curve. For more details, refer to [The ZF FROST
+Book](https://frost.zfnd.org/).
+
+<!-- PLACEHOLDER -->
+
 ## Example: key generation with trusted dealer and FROST signing
 
 Creating a key with a trusted dealer and splitting into shares; then signing a message
@@ -10,73 +17,94 @@ scenario in a single thread and it abstracts away any communication between peer
 
 ```rust
 use reddsa::frost::redpallas as frost;
-use rand::thread_rng;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
-let mut rng = thread_rng();
+let mut rng = rand::rngs::OsRng;
 let max_signers = 5;
 let min_signers = 3;
-let (shares, pubkeys) = frost::keys::keygen_with_dealer(max_signers, min_signers, &mut rng)?;
+let (shares, pubkey_package) = frost::keys::generate_with_dealer(
+    max_signers,
+    min_signers,
+    frost::keys::IdentifierList::Default,
+    &mut rng,
+)?;
 
-// Verifies the secret shares from the dealer and stores them in a HashMap.
-// In practice, each KeyPackage must be sent to its respective participant
+// Verifies the secret shares from the dealer and store them in a BTreeMap.
+// In practice, the KeyPackages must be sent to its respective participants
 // through a confidential and authenticated channel.
-let key_packages: HashMap<_, _> = shares
-    .into_iter()
-    .map(|share| Ok((share.identifier, frost::keys::KeyPackage::try_from(share)?)))
-    .collect::<Result<_, _>>()?;
+let mut key_packages: BTreeMap<_, _> = BTreeMap::new();
 
-let mut nonces = HashMap::new();
-let mut commitments = HashMap::new();
+for (identifier, secret_share) in shares {
+    # // ANCHOR: tkg_verify
+    let key_package = frost::keys::KeyPackage::try_from(secret_share)?;
+    # // ANCHOR_END: tkg_verify
+    key_packages.insert(identifier, key_package);
+}
+
+let mut nonces_map = BTreeMap::new();
+let mut commitments_map = BTreeMap::new();
 
 ////////////////////////////////////////////////////////////////////////////
 // Round 1: generating nonces and signing commitments for each participant
 ////////////////////////////////////////////////////////////////////////////
 
 // In practice, each iteration of this loop will be executed by its respective participant.
-for participant_index in 1..(min_signers as u16 + 1) {
+for participant_index in 1..=min_signers {
     let participant_identifier = participant_index.try_into().expect("should be nonzero");
+    let key_package = &key_packages[&participant_identifier];
     // Generate one (1) nonce and one SigningCommitments instance for each
     // participant, up to _threshold_.
-    let (nonce, commitment) = frost::round1::commit(
-        participant_identifier,
-        key_packages[&participant_identifier].secret_share(),
+    # // ANCHOR: round1_commit
+    let (nonces, commitments) = frost::round1::commit(
+        key_package.signing_share(),
         &mut rng,
     );
-    // In practice, the nonces and commitments must be sent to the coordinator
+    # // ANCHOR_END: round1_commit
+    // In practice, the nonces must be kept by the participant to use in the
+    // next round, while the commitment must be sent to the coordinator
     // (or to every other participant if there is no coordinator) using
     // an authenticated channel.
-    nonces.insert(participant_identifier, nonce);
-    commitments.insert(participant_identifier, commitment);
+    nonces_map.insert(participant_identifier, nonces);
+    commitments_map.insert(participant_identifier, commitments);
 }
 
 // This is what the signature aggregator / coordinator needs to do:
 // - decide what message to sign
 // - take one (unused) commitment per signing participant
-let mut signature_shares = Vec::new();
+let mut signature_shares = BTreeMap::new();
+# // ANCHOR: round2_package
 let message = "message to sign".as_bytes();
-let comms = commitments.clone().into_values().collect();
-// In practice, the SigningPackage must be sent to all participants
-// involved in the current signing (at least min_signers participants),
-// using an authenticated channel (and confidential if the message is secret).
-let signing_package = frost::SigningPackage::new(comms, message.to_vec());
+# // In practice, the SigningPackage must be sent to all participants
+# // involved in the current signing (at least min_signers participants),
+# // using an authenticate channel (and confidential if the message is secret),
+# // along with the `randomizer_seed`.
+let signing_package = frost::SigningPackage::new(commitments_map, message);
+let (randomizer_params, randomizer_seed) = frost::rerandomized::RandomizedParams::new_from_commitments(
+    pubkey_package.verifying_key(),
+    signing_package.signing_commitments(),
+    &mut rng,
+)
+.unwrap();
+# // ANCHOR_END: round2_package
 
 ////////////////////////////////////////////////////////////////////////////
 // Round 2: each participant generates their signature share
 ////////////////////////////////////////////////////////////////////////////
 
 // In practice, each iteration of this loop will be executed by its respective participant.
-for participant_identifier in nonces.keys() {
+for participant_identifier in nonces_map.keys() {
     let key_package = &key_packages[participant_identifier];
 
-    let nonces_to_use = &nonces[participant_identifier];
+    let nonces = &nonces_map[participant_identifier];
 
     // Each participant generates their signature share.
-    let signature_share = frost::round2::sign(&signing_package, nonces_to_use, key_package)?;
+    # // ANCHOR: round2_sign
+    let signature_share = frost::rerandomized::sign_with_randomizer_seed(&signing_package, nonces, key_package, &randomizer_seed)?;
+    # // ANCHOR_END: round2_sign
 
     // In practice, the signature share must be sent to the Coordinator
     // using an authenticated channel.
-    signature_shares.push(signature_share);
+    signature_shares.insert(*participant_identifier, signature_share);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -85,14 +113,20 @@ for participant_identifier in nonces.keys() {
 ////////////////////////////////////////////////////////////////////////////
 
 // Aggregate (also verifies the signature shares)
-let group_signature = frost::aggregate(&signing_package, &signature_shares[..], &pubkeys)?;
+# // ANCHOR: aggregate
+let group_signature = frost::rerandomized::aggregate(&signing_package, &signature_shares, &pubkey_package, &randomizer_params)?;
+# // ANCHOR_END: aggregate
 
-// Check that the threshold signature can be verified by the group public
-// key (the verification key).
-assert!(pubkeys
-    .group_public
+
+// Check that the threshold signature can be verified by the rerandomized group
+// public key (the verification key).
+# // ANCHOR: verify
+let is_signature_valid = randomizer_params
+    .randomized_verifying_key()
     .verify(message, &group_signature)
-    .is_ok());
+    .is_ok();
+# // ANCHOR_END: verify
+assert!(is_signature_valid);
 
 # Ok::<(), frost::Error>(())
 ```

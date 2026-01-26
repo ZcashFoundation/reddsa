@@ -1,12 +1,15 @@
-//! Rerandomized FROST with Jubjub curve.
+#![doc = include_str!("redjubjub/README.md")]
 #![allow(non_snake_case)]
 #![deny(missing_docs)]
 
 use alloc::collections::BTreeMap;
 
+use frost_rerandomized::RandomizedCiphersuite;
 use group::GroupEncoding;
 #[cfg(feature = "alloc")]
 use group::{ff::Field as _, ff::PrimeField, Group as _};
+
+pub mod rerandomized;
 
 // Re-exports in our public API
 #[cfg(feature = "serde")]
@@ -14,7 +17,6 @@ pub use frost_rerandomized::frost_core::serde;
 pub use frost_rerandomized::frost_core::{
     self as frost, Ciphersuite, Field, FieldError, Group, GroupError,
 };
-use frost_rerandomized::RandomizedCiphersuite;
 pub use rand_core;
 
 use rand_core::{CryptoRng, RngCore};
@@ -345,46 +347,17 @@ pub mod round2 {
     ///
     /// Assumes the participant has already determined which nonce corresponds with
     /// the commitment that was assigned by the coordinator in the SigningPackage.
-    #[deprecated(
-        note = "switch to sign_with_randomizer_seed(), passing a seed generated with RandomizedParams::new_from_commitments()"
-    )]
     pub fn sign(
         signing_package: &SigningPackage,
         signer_nonces: &round1::SigningNonces,
         key_package: &keys::KeyPackage,
-        randomizer: Randomizer,
     ) -> Result<SignatureShare, Error> {
-        #[allow(deprecated)]
-        frost_rerandomized::sign(signing_package, signer_nonces, key_package, randomizer)
-    }
-
-    /// Re-randomized FROST signing using the given `randomizer_seed`, which should
-    /// be sent from the Coordinator using a confidential channel.
-    ///
-    /// See [`frost::round2::sign`] for documentation on the other parameters.
-    pub fn sign_with_randomizer_seed<C: RandomizedCiphersuite>(
-        signing_package: &SigningPackage,
-        signer_nonces: &round1::SigningNonces,
-        key_package: &keys::KeyPackage,
-        randomizer_seed: &[u8],
-    ) -> Result<SignatureShare, Error> {
-        frost_rerandomized::sign_with_randomizer_seed(
-            signing_package,
-            signer_nonces,
-            key_package,
-            randomizer_seed,
-        )
+        frost::round2::sign(signing_package, signer_nonces, key_package)
     }
 }
 
 /// A Schnorr signature on FROST(Jubjub, BLAKE2b-512).
 pub type Signature = frost_rerandomized::frost_core::Signature<J>;
-
-/// Randomized parameters for a signing instance of randomized FROST.
-pub type RandomizedParams = frost_rerandomized::RandomizedParams<J>;
-
-/// A randomizer. A random scalar which is used to randomize the key.
-pub type Randomizer = frost_rerandomized::Randomizer<J>;
 
 /// Verifies each FROST(Jubjub, BLAKE2b-512) participant's signature share, and if all are valid,
 /// aggregates the shares into a signature to publish.
@@ -405,16 +378,28 @@ pub fn aggregate(
     signing_package: &SigningPackage,
     signature_shares: &BTreeMap<Identifier, round2::SignatureShare>,
     pubkeys: &keys::PublicKeyPackage,
-    randomized_params: &RandomizedParams,
 ) -> Result<Signature, Error> {
-    frost_rerandomized::aggregate(
+    frost::aggregate(signing_package, signature_shares, pubkeys)
+}
+
+/// The type of cheater detection to use.
+pub type CheaterDetection = frost::CheaterDetection;
+
+/// Like [`aggregate()`], but allow specifying a specific cheater detection
+/// strategy.
+pub fn aggregate_custom(
+    signing_package: &SigningPackage,
+    signature_shares: &BTreeMap<Identifier, round2::SignatureShare>,
+    pubkeys: &keys::PublicKeyPackage,
+    cheater_detection: CheaterDetection,
+) -> Result<Signature, Error> {
+    frost::aggregate_custom(
         signing_package,
         signature_shares,
         pubkeys,
-        randomized_params,
+        cheater_detection,
     )
 }
-
 /// A signing key for a Schnorr signature on FROST(Jubjub, BLAKE2b-512).
 pub type SigningKey = frost_rerandomized::frost_core::SigningKey<J>;
 
