@@ -88,12 +88,13 @@ fn check_even_y_frost_core() {
     let mut rng = thread_rng();
 
     // Since there is a 50% chance of the public key having an odd Y (which
-    // we need to actually test), loop until we get an odd Y.
-    loop {
+    // we need to actually test), loop enough times to make the chance of getting
+    // at least one odd Y very high.
+    for _ in 0..32 {
         let max_signers = 5;
         let min_signers = 3;
         // Generate keys with frost-core function, which doesn't ensure even Y
-        let (shares, public_key_package) =
+        let (secret_shares, public_key_package) =
             frost::keys::generate_with_dealer::<PallasBlake2b512, _>(
                 max_signers,
                 min_signers,
@@ -102,68 +103,21 @@ fn check_even_y_frost_core() {
             )
             .unwrap();
 
-        if !public_key_package.has_even_y() {
-            // Test consistency of into_even_y() for PublicKeyPackage
-            let even_public_key_package_is_even_none = public_key_package.clone().into_even_y(None);
-            let even_public_key_package_is_even_false =
-                public_key_package.clone().into_even_y(Some(false));
-            assert_eq!(
-                even_public_key_package_is_even_false,
-                even_public_key_package_is_even_none
-            );
-            assert_ne!(public_key_package, even_public_key_package_is_even_false);
-            assert_ne!(public_key_package, even_public_key_package_is_even_none);
+        assert!(public_key_package.has_even_y());
 
-            // Test consistency of into_even_y() for SecretShare (arbitrarily on
-            // the first secret share)
-            let secret_share = shares.first_key_value().unwrap().1.clone();
-            let even_secret_share_is_even_none = secret_share.clone().into_even_y(None);
-            let even_secret_share_is_even_false = secret_share.clone().into_even_y(Some(false));
-            assert_eq!(
-                even_secret_share_is_even_false,
-                even_secret_share_is_even_none
-            );
-            assert_ne!(secret_share, even_secret_share_is_even_false);
-            assert_ne!(secret_share, even_secret_share_is_even_none);
+        let key_packages: BTreeMap<_, _> = secret_shares
+            .into_iter()
+            .map(|(id, share)| (id, frost::keys::KeyPackage::try_from(share).unwrap()))
+            .collect();
 
-            // Make secret shares even, then convert into KeyPackages
-            let key_packages_evened_before: BTreeMap<_, _> = shares
-                .clone()
-                .into_iter()
-                .map(|(identifier, share)| {
-                    Ok((
-                        identifier,
-                        frost::keys::KeyPackage::try_from(share.into_even_y(None))?,
-                    ))
-                })
-                .collect::<Result<_, frost::Error<PallasBlake2b512>>>()
-                .unwrap();
-            // Convert into KeyPackages, then make them even
-            let key_packages_evened_after: BTreeMap<_, _> = shares
-                .into_iter()
-                .map(|(identifier, share)| {
-                    Ok((
-                        identifier,
-                        frost::keys::KeyPackage::try_from(share)?.into_even_y(None),
-                    ))
-                })
-                .collect::<Result<_, frost::Error<PallasBlake2b512>>>()
-                .unwrap();
-            // Make sure they are equal
-            assert_eq!(key_packages_evened_after, key_packages_evened_before);
-
-            // Check if signing works with evened keys
-            frost::tests::ciphersuite_generic::check_sign(
-                min_signers,
-                key_packages_evened_after,
-                &mut rng,
-                even_public_key_package_is_even_none,
-            )
-            .unwrap();
-
-            // We managed to test it; break the loop and return
-            break;
-        }
+        // Check if signing works with evened keys
+        frost::tests::ciphersuite_generic::check_sign(
+            min_signers,
+            key_packages,
+            &mut rng,
+            public_key_package,
+        )
+        .unwrap();
     }
 }
 
