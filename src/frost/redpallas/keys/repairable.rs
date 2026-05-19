@@ -25,21 +25,21 @@ pub type Sigma = frost::keys::repairable::Sigma<PallasBlake2b512>;
 /// `participant` recover their share.
 ///
 /// Returns a BTreeMap mapping which value should be sent to which participant.
-pub fn repair_share_step_1<C: Ciphersuite, R: RngCore + CryptoRng>(
+pub fn repair_share_part1<C: Ciphersuite, R: RngCore + CryptoRng>(
     helpers: &[Identifier],
     key_package_i: &KeyPackage,
     rng: &mut R,
     participant: Identifier,
 ) -> Result<BTreeMap<Identifier, Delta>, Error> {
-    frost::keys::repairable::repair_share_step_1(helpers, key_package_i, rng, participant)
+    frost::keys::repairable::repair_share_part1(helpers, key_package_i, rng, participant)
 }
 
 /// Step 2 of RTS.
 ///
 /// Generates the "sigma" value from all `deltas` received from all helpers.
 /// The "sigma" value must be sent to the participant repairing their share.
-pub fn repair_share_step_2(deltas: &[Delta]) -> Sigma {
-    frost::keys::repairable::repair_share_step_2::<PallasBlake2b512>(deltas)
+pub fn repair_share_part2(deltas: &[Delta]) -> Sigma {
+    frost::keys::repairable::repair_share_part2::<PallasBlake2b512>(deltas)
 }
 
 /// Step 3 of RTS.
@@ -51,10 +51,10 @@ pub fn repair_share_step_2(deltas: &[Delta]) -> Sigma {
 /// Returns an error if the `min_signers` field is not set in the `PublicKeyPackage`.
 /// This happens for `PublicKeyPackage`s created before the 3.0.0 release;
 /// in that case, the user should set the `min_signers` field manually.
-pub fn repair_share_step_3(
+pub fn repair_share_part3(
     sigmas: &[Sigma],
     identifier: Identifier,
     public_key_package: &PublicKeyPackage,
 ) -> Result<KeyPackage, Error> {
-    frost::keys::repairable::repair_share_step_3(sigmas, identifier, public_key_package)
+    frost::keys::repairable::repair_share_part3(sigmas, identifier, public_key_package)
 }

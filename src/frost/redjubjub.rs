@@ -400,6 +400,7 @@ pub fn aggregate_custom(
         cheater_detection,
     )
 }
+
 /// A signing key for a Schnorr signature on FROST(Jubjub, BLAKE2b-512).
 pub type SigningKey = frost_rerandomized::frost_core::SigningKey<J>;
 
