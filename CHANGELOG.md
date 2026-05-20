@@ -2,6 +2,14 @@
 
 Entries are listed in reverse chronological order.
 
+## 0.5.2
+
+* The `Debug` implementation of `SigningKey` now redacts the signing key value.
+  Thanks @Zk-nd3r for reporting the issue.
+* Updated `frost-rerandomized` to 3.0.0. Note that a lot of breaking changes are
+  included under the `frost` feature; refer to the `frost-rerandomized`
+  changelog.
+
 ## 0.5.1
 
 * MSRV is now 1.65.0
