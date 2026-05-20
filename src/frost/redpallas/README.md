@@ -76,7 +76,7 @@ let mut signature_shares = BTreeMap::new();
 let message = "message to sign".as_bytes();
 # // In practice, the SigningPackage must be sent to all participants
 # // involved in the current signing (at least min_signers participants),
-# // using an authenticate channel (and confidential if the message is secret),
+# // using an authenticated channel (and confidential if the message is secret),
 # // along with the `randomizer_seed`.
 let signing_package = frost::SigningPackage::new(commitments_map, message);
 let (randomizer_params, randomizer_seed) = frost::rerandomized::RandomizedParams::new_from_commitments(
