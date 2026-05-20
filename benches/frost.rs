@@ -92,12 +92,13 @@ fn bench_rerandomized_sign<
 
         let message = "message to sign".as_bytes();
         let signing_package = frost::SigningPackage::new(commitments, message);
-        let randomizer_params = frost_rerandomized::RandomizedParams::new(
-            pubkeys.verifying_key(),
-            &signing_package,
-            &mut rng,
-        )
-        .unwrap();
+        let (randomizer_params, randomizer_seed) =
+            frost_rerandomized::RandomizedParams::new_from_commitments(
+                pubkeys.verifying_key(),
+                signing_package.signing_commitments(),
+                &mut rng,
+            )
+            .unwrap();
         let randomizer = *randomizer_params.randomizer();
 
         group.bench_with_input(
@@ -111,12 +112,13 @@ fn bench_rerandomized_sign<
                 b.iter(|| {
                     let participant_identifier = 1u16.try_into().expect("should be nonzero");
                     let key_package = key_packages.get(&participant_identifier).unwrap();
-                    let nonces_to_use = &nonces.get(&participant_identifier).unwrap();
-                    frost_rerandomized::sign(
+                    let nonces_to_use: &&frost::round1::SigningNonces<C> =
+                        &nonces.get(&participant_identifier).unwrap();
+                    frost_rerandomized::sign_with_randomizer_seed(
                         signing_package,
                         nonces_to_use,
                         key_package,
-                        *randomizer_params.randomizer(),
+                        &randomizer_seed,
                     )
                     .unwrap();
                 })
@@ -127,11 +129,11 @@ fn bench_rerandomized_sign<
         for participant_identifier in nonces.keys() {
             let key_package = key_packages.get(participant_identifier).unwrap();
             let nonces_to_use = &nonces.get(participant_identifier).unwrap();
-            let signature_share = frost_rerandomized::sign(
+            let signature_share = frost_rerandomized::sign_with_randomizer_seed(
                 &signing_package,
                 nonces_to_use,
                 key_package,
-                *randomizer_params.randomizer(),
+                &randomizer_seed,
             )
             .unwrap();
             signature_shares.insert(*key_package.identifier(), signature_share);

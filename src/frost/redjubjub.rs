@@ -1,12 +1,15 @@
-//! Rerandomized FROST with Jubjub curve.
+#![doc = include_str!("redjubjub/README.md")]
 #![allow(non_snake_case)]
 #![deny(missing_docs)]
 
 use alloc::collections::BTreeMap;
 
+use frost_rerandomized::RandomizedCiphersuite;
 use group::GroupEncoding;
 #[cfg(feature = "alloc")]
 use group::{ff::Field as _, ff::PrimeField, Group as _};
+
+pub mod rerandomized;
 
 // Re-exports in our public API
 #[cfg(feature = "serde")]
@@ -14,7 +17,6 @@ pub use frost_rerandomized::frost_core::serde;
 pub use frost_rerandomized::frost_core::{
     self as frost, Ciphersuite, Field, FieldError, Group, GroupError,
 };
-use frost_rerandomized::RandomizedCiphersuite;
 pub use rand_core;
 
 use rand_core::{CryptoRng, RngCore};
@@ -349,20 +351,13 @@ pub mod round2 {
         signing_package: &SigningPackage,
         signer_nonces: &round1::SigningNonces,
         key_package: &keys::KeyPackage,
-        randomizer: Randomizer,
     ) -> Result<SignatureShare, Error> {
-        frost_rerandomized::sign(signing_package, signer_nonces, key_package, randomizer)
+        frost::round2::sign(signing_package, signer_nonces, key_package)
     }
 }
 
 /// A Schnorr signature on FROST(Jubjub, BLAKE2b-512).
 pub type Signature = frost_rerandomized::frost_core::Signature<J>;
-
-/// Randomized parameters for a signing instance of randomized FROST.
-pub type RandomizedParams = frost_rerandomized::RandomizedParams<J>;
-
-/// A randomizer. A random scalar which is used to randomize the key.
-pub type Randomizer = frost_rerandomized::Randomizer<J>;
 
 /// Verifies each FROST(Jubjub, BLAKE2b-512) participant's signature share, and if all are valid,
 /// aggregates the shares into a signature to publish.
@@ -383,13 +378,26 @@ pub fn aggregate(
     signing_package: &SigningPackage,
     signature_shares: &BTreeMap<Identifier, round2::SignatureShare>,
     pubkeys: &keys::PublicKeyPackage,
-    randomized_params: &RandomizedParams,
 ) -> Result<Signature, Error> {
-    frost_rerandomized::aggregate(
+    frost::aggregate(signing_package, signature_shares, pubkeys)
+}
+
+/// The type of cheater detection to use.
+pub type CheaterDetection = frost::CheaterDetection;
+
+/// Like [`aggregate()`], but allow specifying a specific cheater detection
+/// strategy.
+pub fn aggregate_custom(
+    signing_package: &SigningPackage,
+    signature_shares: &BTreeMap<Identifier, round2::SignatureShare>,
+    pubkeys: &keys::PublicKeyPackage,
+    cheater_detection: CheaterDetection,
+) -> Result<Signature, Error> {
+    frost::aggregate_custom(
         signing_package,
         signature_shares,
         pubkeys,
-        randomized_params,
+        cheater_detection,
     )
 }
 

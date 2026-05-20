@@ -93,7 +93,6 @@ fn check_even_y_frost_core() {
     for _ in 0..32 {
         let max_signers = 5;
         let min_signers = 3;
-        // Generate keys with frost-core function, which doesn't ensure even Y
         let (secret_shares, public_key_package) =
             frost::keys::generate_with_dealer::<PallasBlake2b512, _>(
                 max_signers,
