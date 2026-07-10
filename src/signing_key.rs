@@ -8,6 +8,8 @@
 // - Deirdre Connolly <deirdre@zfnd.org>
 // - Henry de Valence <hdevalence@hdevalence.ca>
 
+#[cfg(feature = "zeroize")]
+use core::sync::atomic::{compiler_fence, Ordering};
 use core::{
     convert::{TryFrom, TryInto},
     fmt,
@@ -18,8 +20,12 @@ use crate::{
     private::SealedScalar, Error, Randomizer, SigType, Signature, SpendAuth, VerificationKey,
 };
 
+#[cfg(feature = "zeroize")]
+use group::ff::Field;
 use group::{ff::PrimeField, GroupEncoding};
 use rand_core::{CryptoRng, RngCore};
+#[cfg(feature = "zeroize")]
+use zeroize::Zeroize;
 
 /// A RedDSA signing key.
 #[derive(Copy, Clone)]
@@ -30,6 +36,18 @@ use rand_core::{CryptoRng, RngCore};
 pub struct SigningKey<T: SigType> {
     sk: T::Scalar,
     pk: VerificationKey<T>,
+}
+
+#[cfg(feature = "zeroize")]
+impl<T: SigType> Zeroize for SigningKey<T> {
+    fn zeroize(&mut self) {
+        // The verification key is public. Erase the secret scalar with a volatile
+        // write so the compiler cannot optimize it away before the value is freed.
+        unsafe {
+            core::ptr::write_volatile(&mut self.sk, T::Scalar::ZERO);
+        }
+        compiler_fence(Ordering::SeqCst);
+    }
 }
 
 impl<T: SigType> fmt::Debug for SigningKey<T> {
@@ -146,5 +164,25 @@ impl<T: SigType> SigningKey<T> {
             s_bytes,
             _marker: PhantomData,
         }
+    }
+}
+
+#[cfg(all(test, feature = "zeroize"))]
+mod tests {
+    use super::SigningKey;
+    use crate::orchard::SpendAuth;
+    use zeroize::Zeroize;
+
+    #[test]
+    fn zeroize_erases_secret_scalar() {
+        let mut key = SigningKey::<SpendAuth>::try_from([
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ])
+        .unwrap();
+
+        key.zeroize();
+
+        assert_eq!(<[u8; 32]>::from(key), [0; 32]);
     }
 }

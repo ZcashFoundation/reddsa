@@ -2,6 +2,10 @@
 
 Entries are listed in reverse chronological order.
 
+## Unreleased
+
+* Added `Zeroize` support for `SigningKey` when the `zeroize` feature is enabled.
+
 ## 0.5.2
 
 * The `Debug` implementation of `SigningKey` now redacts the signing key value.
@@ -70,4 +74,3 @@ relative to `redjubjub 0.4.0`:
     specification) should continue to use previous versions of this crate, until
     they can either move the checks into their own code, or migrate their
     consensus rules to match the RedDSA specification.
-
