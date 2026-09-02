@@ -2,6 +2,10 @@
 
 Entries are listed in reverse chronological order.
 
+## Unreleased
+
+* MSRV is now 1.88.0
+
 ## 0.5.2
 
 * The `Debug` implementation of `SigningKey` now redacts the signing key value.
