@@ -105,11 +105,10 @@ dependencies = [
 [[package]]
 name = "bls12_381"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7bc6d6292be3a19e6379786dac800f551e5865a5bb51ebbe3064ab80433f403"
+source = "git+https://github.com/dannywillems/bls12_381.git?rev=90261e682a44da54ffbc0089ac5aea105ec74cbf#90261e682a44da54ffbc0089ac5aea105ec74cbf"
 dependencies = [
- "ff 0.13.1",
- "rand_core 0.6.4",
+ "ff",
+ "rand_core 0.10.1",
  "subtle",
 ]
 
@@ -263,29 +262,6 @@ dependencies = [
 
 [[package]]
 name = "criterion"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bf7af66b0989381bd0be551bd7cc91912a655a58c6918420c9527b1fd8b4679"
-dependencies = [
- "anes",
- "cast",
- "ciborium",
- "clap",
- "criterion-plot 0.5.0",
- "itertools 0.13.0",
- "num-traits",
- "oorandom",
- "plotters",
- "rayon",
- "regex",
- "serde",
- "serde_json",
- "tinytemplate",
- "walkdir",
-]
-
-[[package]]
-name = "criterion"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "950046b2aa2492f9a536f5f4f9a3de7b9e2476e575e05bd6c333371add4d98f3"
@@ -295,8 +271,8 @@ dependencies = [
  "cast",
  "ciborium",
  "clap",
- "criterion-plot 0.8.2",
- "itertools 0.13.0",
+ "criterion-plot",
+ "itertools",
  "num-traits",
  "oorandom",
  "page_size",
@@ -311,22 +287,12 @@ dependencies = [
 
 [[package]]
 name = "criterion-plot"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
-dependencies = [
- "cast",
- "itertools 0.10.5",
-]
-
-[[package]]
-name = "criterion-plot"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8d80a2f4f5b554395e47b5d8305bc3d27813bacb73493eb1001e8f76dae29ea"
 dependencies = [
  "cast",
- "itertools 0.13.0",
+ "itertools",
 ]
 
 [[package]]
@@ -422,16 +388,6 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "ff"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0b50bfb653653f9ca9095b427bed08ab8d75a137839d9ad64eb11810d5b6393"
-dependencies = [
- "rand_core 0.6.4",
- "subtle",
-]
-
-[[package]]
-name = "ff"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1f686ab92a9fb0eaf188f6c6c87b89490baa6fdb0db4544ba4dc47f7942489f"
@@ -460,7 +416,7 @@ dependencies = [
  "byteorder",
  "const-crc32-nostd",
  "const-hex",
- "criterion 0.8.2",
+ "criterion",
  "debugless-unwrap",
  "derive-getters",
  "document-features",
@@ -544,22 +500,11 @@ dependencies = [
 
 [[package]]
 name = "group"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
-dependencies = [
- "ff 0.13.1",
- "rand_core 0.6.4",
- "subtle",
-]
-
-[[package]]
-name = "group"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fd1a1c7a5206c5b7a3f5a0d7ccd3ff85d0c8f5133d62a02680255b0004af5f4"
 dependencies = [
- "ff 0.14.0",
+ "ff",
  "rand_core 0.10.1",
  "subtle",
 ]
@@ -580,15 +525,6 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-
-[[package]]
-name = "itertools"
-version = "0.10.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
-dependencies = [
- "either",
-]
 
 [[package]]
 name = "itertools"
@@ -619,14 +555,13 @@ dependencies = [
 [[package]]
 name = "jubjub"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8499f7a74008aafbecb2a2e608a3e13e4dd3e84df198b604451efe93f2de6e61"
+source = "git+https://github.com/dannywillems/jubjub.git?rev=bbc02c837de0a515e83a61c64eb63ca293767612#bbc02c837de0a515e83a61c64eb63ca293767612"
 dependencies = [
  "bitvec",
  "bls12_381",
- "ff 0.13.1",
- "group 0.13.0",
- "rand_core 0.6.4",
+ "ff",
+ "group",
+ "rand_core 0.10.1",
  "subtle",
 ]
 
@@ -716,8 +651,8 @@ version = "0.5.2"
 source = "git+https://github.com/zcash/pasta_curves.git?rev=a51d76f82bb28b01fc76f0f8ed3e5fdb055481dd#a51d76f82bb28b01fc76f0f8ed3e5fdb055481dd"
 dependencies = [
  "blake2b_simd",
- "ff 0.14.0",
- "group 0.14.0",
+ "ff",
+ "group",
  "rand 0.10.2",
  "static_assertions",
  "subtle",
@@ -893,12 +828,6 @@ dependencies = [
 
 [[package]]
 name = "rand_core"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
-
-[[package]]
-name = "rand_core"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76afc826de14238e6e8c374ddcc1fa19e374fd8dd986b0d2af0d02377261d83c"
@@ -948,9 +877,9 @@ dependencies = [
  "bincode",
  "blake2b_simd",
  "byteorder",
- "criterion 0.6.0",
+ "criterion",
  "frost-rerandomized",
- "group 0.14.0",
+ "group",
  "hex",
  "jubjub",
  "lazy_static",

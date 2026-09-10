@@ -40,7 +40,7 @@ optional = true
 
 [dev-dependencies]
 bincode = "1"
-criterion = "0.6"
+criterion = "0.8"
 hex = "0.4.3"
 proptest-derive = "0.5"
 lazy_static = "1.5"
@@ -59,6 +59,8 @@ default-features = false
 features = ["alloc"]
 
 [patch.crates-io]
+jubjub = { git = "https://github.com/dannywillems/jubjub.git", rev = "bbc02c837de0a515e83a61c64eb63ca293767612" }
+bls12_381 = { git = "https://github.com/dannywillems/bls12_381.git", rev = "90261e682a44da54ffbc0089ac5aea105ec74cbf" }
 pasta_curves = { git = "https://github.com/zcash/pasta_curves.git", rev = "a51d76f82bb28b01fc76f0f8ed3e5fdb055481dd" }
 frost-rerandomized = { git = "https://github.com/zcashfoundation/frost.git", rev = "0966bd1529aa062ad3b621af99e277f976b1c0f0" }
 
