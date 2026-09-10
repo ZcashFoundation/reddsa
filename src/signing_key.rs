@@ -19,7 +19,7 @@ use crate::{
 };
 
 use group::{ff::PrimeField, GroupEncoding};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{CryptoRng, Rng};
 
 /// A RedDSA signing key.
 #[derive(Copy, Clone)]
@@ -99,7 +99,7 @@ impl<T: SpendAuth> SigningKey<T> {
 
 impl<T: SigType> SigningKey<T> {
     /// Generate a new signing key.
-    pub fn new<R: RngCore + CryptoRng>(mut rng: R) -> SigningKey<T> {
+    pub fn new<R: Rng + CryptoRng>(mut rng: R) -> SigningKey<T> {
         let sk = {
             let mut bytes = [0; 64];
             rng.fill_bytes(&mut bytes);
@@ -111,7 +111,7 @@ impl<T: SigType> SigningKey<T> {
 
     /// Create a signature of type `T` on `msg` using this `SigningKey`.
     // Similar to signature::Signer but without boxed errors.
-    pub fn sign<R: RngCore + CryptoRng>(&self, mut rng: R, msg: &[u8]) -> Signature<T> {
+    pub fn sign<R: Rng + CryptoRng>(&self, mut rng: R, msg: &[u8]) -> Signature<T> {
         use crate::HStar;
 
         // Choose a byte sequence uniformly at random of length

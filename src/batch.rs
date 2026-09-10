@@ -26,7 +26,7 @@ use group::{
     ff::{Field, PrimeField},
     GroupEncoding,
 };
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{CryptoRng, Rng};
 
 use crate::{private::SealedScalar, scalar_mul::VartimeMultiscalarMul, *};
 
@@ -34,7 +34,7 @@ use crate::{private::SealedScalar, scalar_mul::VartimeMultiscalarMul, *};
 /// importing `rand`.
 ///
 /// The final 128 bits are zero.
-fn gen_128_bits<R: RngCore + CryptoRng>(mut rng: R) -> [u64; 4] {
+fn gen_128_bits<R: Rng + CryptoRng>(mut rng: R) -> [u64; 4] {
     let mut bytes = [0u64; 4];
     bytes[0] = rng.next_u64();
     bytes[1] = rng.next_u64();
@@ -187,7 +187,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
     ///
     /// [ps]: https://zips.z.cash/protocol/protocol.pdf#reddsabatchverify
     #[allow(non_snake_case)]
-    pub fn verify<R: RngCore + CryptoRng>(self, mut rng: R) -> Result<(), Error> {
+    pub fn verify<R: Rng + CryptoRng>(self, mut rng: R) -> Result<(), Error> {
         // https://p.z.cash/TCR:bad-txns-orchard-binding-signature-invalid?partial
         let n = self.signatures.len();
 

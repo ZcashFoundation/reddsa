@@ -24,11 +24,11 @@ features = ["nightly"]
 [dependencies]
 blake2b_simd = { version = "1", default-features = false }
 byteorder = { version = "1.5", default-features = false }
-group = { version = "0.13", default-features = false }
+group = { version = "0.14", default-features = false }
 hex = { version = "0.4", optional = true, default-features = false, features = ["alloc"] }
 jubjub = { version = "0.10", default-features = false }
 pasta_curves = { version = "0.5", default-features = false }
-rand_core = { version = "0.6", default-features = false }
+rand_core = { version = "0.10", default-features = false }
 serde = { version = "1", optional = true, features = ["derive"] }
 thiserror = { version = "2.0", optional = true }
 frost-rerandomized = { version = "3.0.0", optional = true, default-features = false, features = ["serialization"] }
@@ -45,8 +45,8 @@ hex = "0.4.3"
 proptest-derive = "0.5"
 lazy_static = "1.5"
 proptest = "1.6"
-rand = "0.8"
-rand_chacha = "0.3"
+rand = "0.10"
+rand_chacha = "0.10"
 serde_json = "1.0"
 num-bigint = "0.4.6"
 num-traits = "0.2.19"
@@ -57,6 +57,10 @@ frost-rerandomized = { version = "3.0.0", features = ["test-impl"] }
 version = "0.5"
 default-features = false
 features = ["alloc"]
+
+[patch.crates-io]
+pasta_curves = { git = "https://github.com/zcash/pasta_curves.git", rev = "a51d76f82bb28b01fc76f0f8ed3e5fdb055481dd" }
+frost-rerandomized = { git = "https://github.com/zcashfoundation/frost.git", rev = "0966bd1529aa062ad3b621af99e277f976b1c0f0" }
 
 [features]
 std = ["blake2b_simd/std", "thiserror", "zeroize", "alloc",

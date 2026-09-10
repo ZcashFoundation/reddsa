@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 use group::{ff::Field, GroupEncoding};
 use num_bigint::BigInt;
 use num_traits::Zero;
-use rand::thread_rng;
+use rand::rng as thread_rng;
 
 use crate::scalar_mul::VartimeMultiscalarMul;
 
@@ -15,11 +15,11 @@ fn gen_jubjub_test_vectors() {
     use group::Group;
     use std::println;
 
-    let rng = thread_rng();
+    let mut rng = thread_rng();
 
     let scalars = [
-        jubjub::Scalar::random(rng.clone()),
-        jubjub::Scalar::random(rng.clone()),
+        jubjub::Scalar::random(&mut rng),
+        jubjub::Scalar::random(&mut rng),
     ];
     println!("Scalars:");
     for scalar in scalars {
@@ -27,8 +27,8 @@ fn gen_jubjub_test_vectors() {
     }
 
     let points = [
-        jubjub::ExtendedPoint::random(rng.clone()),
-        jubjub::ExtendedPoint::random(rng),
+        jubjub::ExtendedPoint::random(&mut rng),
+        jubjub::ExtendedPoint::random(&mut rng),
     ];
     println!("Points:");
     for point in points {
@@ -94,9 +94,9 @@ fn test_jubjub_vartime_multiscalar_mul() {
 /// Tests the non-adjacent form for a Jubjub scalar.
 #[test]
 fn test_non_adjacent_form() {
-    let rng = thread_rng();
+    let mut rng = thread_rng();
 
-    let scalar = jubjub::Scalar::random(rng);
+    let scalar = jubjub::Scalar::random(&mut rng);
     test_non_adjacent_form_for_scalar(5, scalar);
 }
 

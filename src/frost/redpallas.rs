@@ -20,7 +20,7 @@ pub use frost_rerandomized::frost_core::{
 };
 pub use rand_core;
 
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{CryptoRng, Rng};
 
 use crate::{frost::redpallas::keys::EvenY, hash::HStar, orchard, private::Sealed};
 
@@ -54,7 +54,7 @@ impl Field for PallasScalarField {
         }
     }
 
-    fn random<R: RngCore + CryptoRng>(rng: &mut R) -> Self::Scalar {
+    fn random<R: Rng + CryptoRng>(rng: &mut R) -> Self::Scalar {
         Self::Scalar::random(rng)
     }
 
@@ -251,7 +251,7 @@ pub mod keys {
 
     /// Allows all participants' keys to be generated using a central, trusted
     /// dealer.
-    pub fn generate_with_dealer<RNG: RngCore + CryptoRng>(
+    pub fn generate_with_dealer<RNG: Rng + CryptoRng>(
         max_signers: u16,
         min_signers: u16,
         identifiers: IdentifierList,
@@ -266,7 +266,7 @@ pub mod keys {
     /// instead of generating a fresh one. This is useful in scenarios where
     /// the key needs to be generated externally or must be derived from e.g. a
     /// seed phrase.
-    pub fn split<R: RngCore + CryptoRng>(
+    pub fn split<R: Rng + CryptoRng>(
         key: &SigningKey,
         max_signers: u16,
         min_signers: u16,
@@ -490,7 +490,7 @@ pub mod round1 {
         rng: &mut RNG,
     ) -> (SigningNonces, SigningCommitments)
     where
-        RNG: CryptoRng + RngCore,
+        RNG: CryptoRng + Rng,
     {
         frost::round1::commit::<P, RNG>(secret, rng)
     }
