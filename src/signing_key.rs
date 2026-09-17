@@ -15,14 +15,19 @@ use core::{
 };
 
 use crate::{
-    private::SealedScalar, Error, Randomizer, SigType, Signature, SpendAuth, VerificationKey,
+    private::SealedScalar, zeroize_secret, Error, Randomizer, SigType, Signature, SpendAuth,
+    VerificationKey,
 };
 
 use group::{ff::PrimeField, GroupEncoding};
 use rand_core::{CryptoRng, Rng};
+#[cfg(feature = "zeroize")]
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// A RedDSA signing key.
-#[derive(Copy, Clone)]
+///
+/// If the `zeroize` feature is enabled, the secret scalar is zeroized on drop.
+#[derive(Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "SerdeHelper"))]
 #[cfg_attr(feature = "serde", serde(into = "SerdeHelper"))]
@@ -41,15 +46,37 @@ impl<T: SigType> fmt::Debug for SigningKey<T> {
     }
 }
 
+#[cfg(feature = "zeroize")]
+impl<T: SigType> Zeroize for SigningKey<T> {
+    fn zeroize(&mut self) {
+        // The verification key is public and is left intact.
+        self.sk.zeroize();
+    }
+}
+
+#[cfg(feature = "zeroize")]
+impl<T: SigType> ZeroizeOnDrop for SigningKey<T> {}
+
+#[cfg(feature = "zeroize")]
+impl<T: SigType> Drop for SigningKey<T> {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+
 impl<T: SigType> From<&SigningKey<T>> for VerificationKey<T> {
     fn from(sk: &SigningKey<T>) -> VerificationKey<T> {
         sk.pk
     }
 }
 
-impl<T: SigType> From<SigningKey<T>> for [u8; 32] {
-    fn from(sk: SigningKey<T>) -> [u8; 32] {
-        sk.sk.to_repr().as_ref().try_into().unwrap()
+impl<T: SigType> SigningKey<T> {
+    /// Returns the canonical byte encoding of the secret scalar.
+    ///
+    /// The returned array is secret key material; the caller is responsible for
+    /// zeroizing it once it is no longer needed.
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.sk.to_repr().as_ref().try_into().unwrap()
     }
 }
 
@@ -84,7 +111,7 @@ impl<T: SigType> TryFrom<SerdeHelper> for SigningKey<T> {
 
 impl<T: SigType> From<SigningKey<T>> for SerdeHelper {
     fn from(sk: SigningKey<T>) -> Self {
-        Self(sk.into())
+        Self(sk.to_bytes())
     }
 }
 
@@ -103,7 +130,9 @@ impl<T: SigType> SigningKey<T> {
         let sk = {
             let mut bytes = [0; 64];
             rng.fill_bytes(&mut bytes);
-            T::Scalar::from_bytes_wide(&bytes)
+            let sk = T::Scalar::from_bytes_wide(&bytes);
+            zeroize_secret(&mut bytes);
+            sk
         };
         let pk = VerificationKey::from(&sk);
         SigningKey { sk, pk }
@@ -117,13 +146,13 @@ impl<T: SigType> SigningKey<T> {
         // Choose a byte sequence uniformly at random of length
         // (\ell_H + 128)/8 bytes.  For RedJubjub and RedPallas this is
         // (512 + 128)/8 = 80.
-        let random_bytes = {
+        let mut random_bytes = {
             let mut bytes = [0; 80];
             rng.fill_bytes(&mut bytes);
             bytes
         };
 
-        let nonce = HStar::<T>::default()
+        let mut nonce = HStar::<T>::default()
             .update(&random_bytes[..])
             .update(&self.pk.bytes.bytes[..]) // XXX ugly
             .update(msg)
@@ -141,10 +170,47 @@ impl<T: SigType> SigningKey<T> {
         let s = nonce + (c * self.sk);
         let s_bytes = s.to_repr().as_ref().try_into().unwrap();
 
+        // The nonce and the randomness it was derived from must not outlive the
+        // signature: recovering either alongside `s` discloses the signing key.
+        zeroize_secret(&mut nonce);
+        zeroize_secret(&mut random_bytes);
+
         Signature {
             r_bytes,
             s_bytes,
             _marker: PhantomData,
         }
+    }
+}
+
+#[cfg(all(test, feature = "zeroize"))]
+mod tests {
+    use core::convert::TryFrom;
+
+    use zeroize::Zeroize;
+
+    use super::SigningKey;
+    use crate::orchard::SpendAuth;
+
+    fn key() -> SigningKey<SpendAuth> {
+        let mut bytes = [0u8; 32];
+        bytes[0] = 7;
+        SigningKey::try_from(bytes).unwrap()
+    }
+
+    #[test]
+    fn zeroize_erases_secret_scalar() {
+        let mut key = key();
+        assert_ne!(key.to_bytes(), [0; 32]);
+
+        key.zeroize();
+        assert_eq!(key.to_bytes(), [0; 32]);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn debug_redacts_secret_scalar() {
+        let rendered = std::format!("{:?}", key());
+        assert!(rendered.contains("sk: \"<redacted>\""), "{rendered}");
     }
 }
