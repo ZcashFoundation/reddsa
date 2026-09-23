@@ -5,7 +5,7 @@ Entries are listed in reverse chronological order.
 ## Unreleased
 
 * MSRV is now 1.88.0
-* Update `group` to `0.14`, `rand` and `rand_core` to `0.10`
+* Migrate `group` to `0.14`, `jubjub` to `0.11`, `rand_core` to `0.10`
 
 ## 0.5.2
 
