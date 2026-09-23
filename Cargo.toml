@@ -59,8 +59,8 @@ default-features = false
 features = ["alloc"]
 
 [patch.crates-io]
-pasta_curves = { git = "https://github.com/zcash/pasta_curves.git", rev = "a51d76f82bb28b01fc76f0f8ed3e5fdb055481dd" }
 frost-rerandomized = { git = "https://github.com/zcashfoundation/frost.git", rev = "0966bd1529aa062ad3b621af99e277f976b1c0f0" }
+pasta_curves = { git = "https://github.com/zcash/pasta_curves.git", rev = "9b5e3ca12bef7e08ca195d060abe368cbca85edc" }
 
 [features]
 std = ["blake2b_simd/std", "thiserror", "zeroize", "alloc",
