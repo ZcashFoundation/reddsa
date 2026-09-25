@@ -45,7 +45,7 @@ assert!(
 
 ## FROST
 
-ZIP-312 re-randomized FROST support will be provided by the
+ZIP-312 re-randomized FROST support will be provided by
 the [`frost`](https://github.com/ZcashFoundation/frost) repository.
 
 ## docs
