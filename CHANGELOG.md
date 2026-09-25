@@ -2,10 +2,11 @@
 
 Entries are listed in reverse chronological order.
 
-## Unreleased
+## 0.6.0
 
 * MSRV is now 1.88.0
-* Migrate `group` to `0.14`, `jubjub` to `0.11`, `rand_core` to `0.10`
+* Migrate `group` to `0.14`, `jubjub` to `0.11`, `pasta_curves` to `0.6`,
+  `rand_core` to `0.10`
 * Breaking: the `frost` feature was removed; the FROST ciphersuites will be
   moved to the [`frost`](https://github.com/ZcashFoundation/frost) repository.
 * Added an `internal` feature which exposes internal functions required to e.g.
