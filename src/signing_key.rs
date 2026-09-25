@@ -27,6 +27,9 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 /// A RedDSA signing key.
 ///
 /// If the `zeroize` feature is enabled, the secret scalar is zeroized on drop.
+/// Erasure is best effort. It covers the values that this crate owns. It does
+/// not cover the internal state of the hash function, or copies that the
+/// compiler makes in registers or on the stack.
 #[derive(Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "SerdeHelper"))]
@@ -76,18 +79,24 @@ impl<T: SigType> SigningKey<T> {
     /// The returned array is secret key material; the caller is responsible for
     /// zeroizing it once it is no longer needed.
     pub fn to_bytes(&self) -> [u8; 32] {
-        self.sk.to_repr().as_ref().try_into().unwrap()
+        let mut repr = self.sk.to_repr();
+        let bytes = repr.as_ref().try_into().unwrap();
+        zeroize_secret(repr.as_mut());
+        bytes
     }
-}
 
-impl<T: SigType> TryFrom<[u8; 32]> for SigningKey<T> {
-    type Error = Error;
-
-    fn try_from(bytes: [u8; 32]) -> Result<Self, Self::Error> {
-        // XXX-jubjub: this should not use CtOption
+    /// Parses a signing key from the canonical byte encoding of its secret
+    /// scalar.
+    ///
+    /// Returns [`Error::MalformedSigningKey`] if `bytes` is not a canonical
+    /// scalar encoding.
+    pub fn from_bytes(bytes: &[u8; 32]) -> Result<Self, Error> {
         let mut repr = <T::Scalar as PrimeField>::Repr::default();
-        repr.as_mut().copy_from_slice(&bytes);
+        repr.as_mut().copy_from_slice(bytes);
         let maybe_sk = T::Scalar::from_repr(repr);
+        zeroize_secret(repr.as_mut());
+        // Encoding validity depends only on the input bytes and is not secret,
+        // so it is safe to branch on it.
         if maybe_sk.is_some().into() {
             let sk = maybe_sk.unwrap();
             let pk = VerificationKey::from(&sk);
@@ -99,13 +108,14 @@ impl<T: SigType> TryFrom<[u8; 32]> for SigningKey<T> {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "zeroize", derive(Zeroize, ZeroizeOnDrop))]
 struct SerdeHelper([u8; 32]);
 
 impl<T: SigType> TryFrom<SerdeHelper> for SigningKey<T> {
     type Error = Error;
 
     fn try_from(helper: SerdeHelper) -> Result<Self, Self::Error> {
-        helper.0.try_into()
+        SigningKey::from_bytes(&helper.0)
     }
 }
 
@@ -167,13 +177,16 @@ impl<T: SigType> SigningKey<T> {
             .update(msg)
             .finalize();
 
-        let s = nonce + (c * self.sk);
+        let mut challenge_times_sk = c * self.sk;
+        let s = nonce + challenge_times_sk;
         let s_bytes = s.to_repr().as_ref().try_into().unwrap();
 
-        // The nonce and the randomness it was derived from must not outlive the
-        // signature: recovering either alongside `s` discloses the signing key.
+        // The nonce, the randomness it was derived from and `c * sk` must not
+        // outlive the signature: recovering any of them alongside `s` and `c`
+        // discloses the signing key.
         zeroize_secret(&mut nonce);
         zeroize_secret(&mut random_bytes);
+        zeroize_secret(&mut challenge_times_sk);
 
         Signature {
             r_bytes,
@@ -185,8 +198,6 @@ impl<T: SigType> SigningKey<T> {
 
 #[cfg(all(test, feature = "zeroize"))]
 mod tests {
-    use core::convert::TryFrom;
-
     use zeroize::Zeroize;
 
     use super::SigningKey;
@@ -195,7 +206,7 @@ mod tests {
     fn key() -> SigningKey<SpendAuth> {
         let mut bytes = [0u8; 32];
         bytes[0] = 7;
-        SigningKey::try_from(bytes).unwrap()
+        SigningKey::from_bytes(&bytes).unwrap()
     }
 
     #[test]

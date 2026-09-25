@@ -15,11 +15,15 @@ Entries are listed in reverse chronological order.
 * Removed `impl From<SigningKey<T>> for [u8; 32]`; use the new
   `SigningKey::to_bytes` method instead, which makes extraction of the secret
   scalar explicit at the call site.
+* Removed `impl TryFrom<[u8; 32]> for SigningKey<T>`; use the new
+  `SigningKey::from_bytes` method instead.
 * When the `zeroize` feature is enabled, `SigningKey` implements
   `zeroize::Zeroize` and `zeroize::ZeroizeOnDrop` and erases its secret scalar
-  on drop, and `SigningKey::new` and `SigningKey::sign` erase their secret
-  intermediates (the seed bytes, the nonce and the randomness it was derived
-  from) before returning.
+  on drop, and `SigningKey::new`, `SigningKey::sign`, `SigningKey::to_bytes`,
+  `SigningKey::from_bytes` and serde (de)serialization of `SigningKey` erase
+  their secret intermediates before returning. Erasure is best effort: it does
+  not cover the internal state of the hash function, or copies that the
+  compiler makes in registers or on the stack.
 * The `zeroize` feature now also enables `jubjub/zeroize` and
   `pasta_curves/zeroize`.
 
