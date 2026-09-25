@@ -16,8 +16,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
       with:
         toolchain: 1.88.0
-    # Don't use --all-features because `frost` has a higher MSRV and it's non-default.
-    # Also don't run tests because some dev-dependencies have higher MSRVs.
+    # Don't run tests because some dev-dependencies have higher MSRVs.
     - run: cargo build
   test_nightly:
     name: test on nightly

@@ -17,8 +17,8 @@
 
 ## FROST
 
-FROST support is optional and enabled by the `frost` feature. It's not currently
-bound by the crate MSRV at this moment.
+FROST support will be moved to the
+[`frost`](https://github.com/ZcashFoundation/frost) repository.
 
 
 ## If something breaks
