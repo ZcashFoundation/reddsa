@@ -6,10 +6,26 @@ Entries are listed in reverse chronological order.
 
 * MSRV is now 1.88.0
 * Migrate `group` to `0.14`, `jubjub` to `0.11`, `rand_core` to `0.10`
+  and `pasta_curves` to `0.6`.
 * Breaking: the `frost` feature was removed; the FROST ciphersuites will be
   moved to the [`frost`](https://github.com/ZcashFoundation/frost) repository.
 * Added an `internal` feature which exposes internal functions required to e.g.
   implement the FROST ciphersuites. It is not covered by SemVer guarantees.
+* `SigningKey` is no longer `Copy`. It still implements `Clone`.
+* Removed `impl From<SigningKey<T>> for [u8; 32]`; use the new
+  `SigningKey::to_bytes` method instead, which makes extraction of the secret
+  scalar explicit at the call site.
+* Removed `impl TryFrom<[u8; 32]> for SigningKey<T>`; use the new
+  `SigningKey::from_bytes` method instead.
+* When the `zeroize` feature is enabled, `SigningKey` implements
+  `zeroize::Zeroize` and `zeroize::ZeroizeOnDrop` and erases its secret scalar
+  on drop, and `SigningKey::new`, `SigningKey::sign`, `SigningKey::to_bytes`,
+  `SigningKey::from_bytes` and serde (de)serialization of `SigningKey` erase
+  their secret intermediates before returning. Erasure is best effort: it does
+  not cover the internal state of the hash function, or copies that the
+  compiler makes in registers or on the stack.
+* The `zeroize` feature now also enables `jubjub/zeroize` and
+  `pasta_curves/zeroize`.
 
 ## 0.5.2
 

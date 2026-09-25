@@ -105,6 +105,7 @@ dependencies = [
  "ff",
  "rand_core 0.10.1",
  "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -449,6 +450,7 @@ dependencies = [
  "group",
  "rand_core 0.10.1",
  "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -527,8 +529,9 @@ dependencies = [
 
 [[package]]
 name = "pasta_curves"
-version = "0.5.2"
-source = "git+https://github.com/zcash/pasta_curves.git?rev=9b5e3ca12bef7e08ca195d060abe368cbca85edc#9b5e3ca12bef7e08ca195d060abe368cbca85edc"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ec2f82051d06ea52d7ec6a47546c592fc52392b6040e503e05a764dd10dd1de"
 dependencies = [
  "blake2b_simd",
  "ff",
@@ -536,6 +539,7 @@ dependencies = [
  "rand 0.10.2",
  "static_assertions",
  "subtle",
+ "zeroize",
 ]
 
 [[package]]

@@ -86,6 +86,9 @@ pub(crate) mod private {
         Copy + Clone + Default + Eq + PartialEq + core::fmt::Debug
     {
         const H_STAR_PERSONALIZATION: &'static [u8; 16];
+        #[cfg(feature = "zeroize")]
+        type Scalar: group::ff::PrimeField + SealedScalar + zeroize::Zeroize;
+        #[cfg(not(feature = "zeroize"))]
         type Scalar: group::ff::PrimeField + SealedScalar;
 
         // `Point: VartimeMultiscalarMul` is conditioned by `alloc` feature flag
@@ -133,3 +136,19 @@ pub(crate) fn hex_if_possible(bytes: &[u8]) -> alloc::string::String {
 pub(crate) fn hex_if_possible(bytes: &[u8]) -> &[u8] {
     bytes
 }
+
+/// Zeroizes a secret intermediate value.
+///
+/// This is a no-op unless the `zeroize` feature is enabled.
+#[cfg(feature = "zeroize")]
+#[inline]
+pub(crate) fn zeroize_secret<Z: zeroize::Zeroize + ?Sized>(secret: &mut Z) {
+    secret.zeroize();
+}
+
+/// Zeroizes a secret intermediate value.
+///
+/// This is a no-op unless the `zeroize` feature is enabled.
+#[cfg(not(feature = "zeroize"))]
+#[inline]
+pub(crate) fn zeroize_secret<Z: ?Sized>(_secret: &mut Z) {}
