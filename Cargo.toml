@@ -3,7 +3,7 @@ name = "reddsa"
 edition = "2021"
 rust-version = "1.88"
 # Refer to DEVELOPERS.md for guidance on making new releases.
-version = "0.5.2"
+version = "0.6.0"
 authors = [
     "Henry de Valence <hdevalence@hdevalence.ca>",
     "Deirdre Connolly <durumcrustulum@gmail.com>",
