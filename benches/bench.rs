@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
-use rand::{thread_rng, Rng};
+use rand::{rng as thread_rng, RngExt};
 use reddsa::*;
 use std::convert::TryFrom;
 
@@ -19,7 +19,7 @@ fn sigs_with_distinct_keys() -> impl Iterator<Item = Item> {
     std::iter::repeat_with(|| {
         let mut rng = thread_rng();
         let msg = b"Bench";
-        match rng.gen::<u8>() % 2 {
+        match rng.random::<u8>() % 2 {
             0 => {
                 let sk = SigningKey::<sapling::SpendAuth>::new(thread_rng());
                 let vk_bytes = VerificationKey::from(&sk).into();

@@ -9,7 +9,7 @@ use alloc::collections::BTreeMap;
 use crate::frost::redjubjub::{
     frost,
     keys::{KeyPackage, PublicKeyPackage},
-    Ciphersuite, CryptoRng, Error, Identifier, JubjubBlake2b512, RngCore,
+    Ciphersuite, CryptoRng, Error, Identifier, JubjubBlake2b512, Rng,
 };
 
 /// A delta value which is the output of step 1 of RTS.
@@ -25,7 +25,7 @@ pub type Sigma = frost::keys::repairable::Sigma<JubjubBlake2b512>;
 /// `participant` recover their share.
 ///
 /// Returns a BTreeMap mapping which value should be sent to which participant.
-pub fn repair_share_part1<C: Ciphersuite, R: RngCore + CryptoRng>(
+pub fn repair_share_part1<C: Ciphersuite, R: Rng + CryptoRng>(
     helpers: &[Identifier],
     key_package_i: &KeyPackage,
     rng: &mut R,

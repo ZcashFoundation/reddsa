@@ -1,6 +1,6 @@
 #![cfg(feature = "alloc")]
 
-use rand::thread_rng;
+use rand::rng as thread_rng;
 
 use reddsa::*;
 

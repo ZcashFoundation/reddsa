@@ -1,9 +1,9 @@
 #![cfg(feature = "frost")]
 
-use group::GroupEncoding;
-use rand::thread_rng;
-
 use frost_rerandomized::frost_core::{Ciphersuite, Group, GroupError};
+use group::GroupEncoding;
+
+use rand::rng as thread_rng;
 
 use reddsa::{frost::redjubjub::JubjubBlake2b512, sapling};
 

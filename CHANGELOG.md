@@ -5,6 +5,7 @@ Entries are listed in reverse chronological order.
 ## Unreleased
 
 * MSRV is now 1.88.0
+* Migrate `group` to `0.14`, `jubjub` to `0.11`, `rand_core` to `0.10`
 
 ## 0.5.2
 
@@ -74,4 +75,3 @@ relative to `redjubjub 0.4.0`:
     specification) should continue to use previous versions of this crate, until
     they can either move the checks into their own code, or migrate their
     consensus rules to match the RedDSA specification.
-

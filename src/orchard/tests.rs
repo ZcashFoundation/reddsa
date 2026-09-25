@@ -4,7 +4,7 @@ use crate::scalar_mul::{self, VartimeMultiscalarMul};
 use alloc::vec::Vec;
 use group::ff::Field;
 use group::{ff::PrimeField, GroupEncoding};
-use rand::thread_rng;
+use rand::rng as thread_rng;
 
 use pasta_curves::arithmetic::CurveExt;
 use pasta_curves::pallas;
@@ -33,11 +33,11 @@ fn orchard_binding_basepoint() {
 fn gen_pallas_test_vectors() {
     use group::Group;
 
-    let rng = thread_rng();
+    let mut rng = thread_rng();
 
     let scalars = [
-        pallas::Scalar::random(rng.clone()),
-        pallas::Scalar::random(rng.clone()),
+        pallas::Scalar::random(&mut rng),
+        pallas::Scalar::random(&mut rng),
     ];
     println!("Scalars:");
     for scalar in scalars {
@@ -45,8 +45,8 @@ fn gen_pallas_test_vectors() {
     }
 
     let points = [
-        pallas::Point::random(rng.clone()),
-        pallas::Point::random(rng),
+        pallas::Point::random(&mut rng),
+        pallas::Point::random(&mut rng),
     ];
     println!("Points:");
     for point in points {
@@ -111,8 +111,8 @@ fn test_pallas_vartime_multiscalar_mul() {
 /// Tests the non-adjacent form for a Pallas scalar.
 #[test]
 fn test_non_adjacent_form() {
-    let rng = thread_rng();
+    let mut rng = thread_rng();
 
-    let scalar = pallas::Scalar::random(rng);
+    let scalar = pallas::Scalar::random(&mut rng);
     scalar_mul::tests::test_non_adjacent_form_for_scalar(5, scalar);
 }
