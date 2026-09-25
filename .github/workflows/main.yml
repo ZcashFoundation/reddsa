@@ -43,3 +43,4 @@ jobs:
         toolchain: stable
         targets: thumbv6m-none-eabi
     - run: cargo build --no-default-features --target thumbv6m-none-eabi
+    - run: cargo build --no-default-features --features serde --target thumbv6m-none-eabi

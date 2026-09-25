@@ -4,6 +4,9 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* The `serde` feature no longer enables `serde/std`, so it can be used in
+  `no_std` builds.
+
 ## 0.6.0 - 2026-09-25
 
 * MSRV is now 1.88.0
