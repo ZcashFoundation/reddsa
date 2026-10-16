@@ -4,6 +4,10 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* Empty signature batches now return immediately, and single-signature batches
+  verify without random weights or batch accumulator allocations. Neither path
+  consumes randomness; malformed-encoding errors and cofactor checks are unchanged.
+
 ## 0.6.1 - 2026-09-25
 
 * The `serde` feature no longer enables `serde/std`, so it can be used in
