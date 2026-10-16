@@ -156,6 +156,9 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
     /// Perform batch verification, returning `Ok(())` if all signatures were
     /// valid and `Err` otherwise.
     ///
+    /// Empty batches succeed immediately. Empty and single-signature batches
+    /// do not consume randomness.
+    ///
     /// The batch verification equation is:
     ///
     /// h_G * ( -[sum(z_i * s_i)]P_G + sum(\[z_i\]R_i) + sum([z_i * c_i]VK_i) ) = 0_G
@@ -191,10 +194,16 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         // https://p.z.cash/TCR:bad-txns-orchard-binding-signature-invalid?partial
         let n = self.signatures.len();
 
-        let mut VK_coeffs = Vec::with_capacity(n);
-        let mut VKs = Vec::with_capacity(n);
-        let mut R_coeffs = Vec::with_capacity(self.signatures.len());
-        let mut Rs = Vec::with_capacity(self.signatures.len());
+        if n == 0 {
+            return Ok(());
+        }
+
+        // The single-signature path does not use the batch accumulators.
+        let capacity = if n == 1 { 0 } else { n };
+        let mut VK_coeffs = Vec::with_capacity(capacity);
+        let mut VKs = Vec::with_capacity(capacity);
+        let mut R_coeffs = Vec::with_capacity(capacity);
+        let mut Rs = Vec::with_capacity(capacity);
         let mut P_spendauth_coeff = S::Scalar::ZERO;
         let mut P_binding_coeff = B::Scalar::ZERO;
 
@@ -237,6 +246,24 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                     VerificationKey::<B>::try_from(vk_bytes.bytes)?.point
                 }
             };
+
+            if n == 1 {
+                // Unlike Item::verify_single, retain the batch decoding order
+                // above so malformed signatures take precedence over bad keys.
+                let basepoint = match item.inner {
+                    Inner::SpendAuth { .. } => S::basepoint(),
+                    Inner::Binding { .. } => B::basepoint(),
+                };
+                // No random weighting is needed for one signature. Scalar
+                // negation can add torsion for a non-prime-order key; the
+                // small-order check below ignores that component.
+                let check = S::Point::vartime_multiscalar_mul([s, -c], [basepoint, VK]) - R;
+                return if check.is_small_order().into() {
+                    Ok(())
+                } else {
+                    Err(Error::InvalidSignature)
+                };
+            }
 
             let z = S::Scalar::from_raw(gen_128_bits(&mut rng));
 
