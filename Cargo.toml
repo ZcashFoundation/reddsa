@@ -28,7 +28,7 @@ group = { version = "0.14", default-features = false }
 hex = { version = "0.4", optional = true, default-features = false, features = ["alloc"] }
 jubjub = { version = "0.11", default-features = false }
 maybe-rayon = { version = "0.1", optional = true, default-features = false }
-pasta_curves = { version = "0.6.2", default-features = false }
+pasta_curves = { version = "0.6.3", default-features = false }
 rand_core = { version = "0.10", default-features = false }
 serde = { version = "1", optional = true, default-features = false, features = ["derive"] }
 thiserror = { version = "2.0", optional = true }
@@ -52,14 +52,14 @@ num-bigint = "0.4.6"
 num-traits = "0.2.19"
 
 [dev-dependencies.pasta_curves]
-version = "0.6.2"
+version = "0.6.3"
 default-features = false
 features = ["alloc"]
 
 [features]
 std = ["blake2b_simd/std", "thiserror", "zeroize", "alloc", "pasta_curves/sqrt-table",
        "serde"] # conditional compilation for serde not complete (issue #9)
-alloc = ["hex", "jubjub/alloc", "pasta_curves/alloc"]
+alloc = ["hex", "jubjub/alloc", "pasta_curves/alloc", "pasta_curves/glv"]
 multicore = ["alloc", "dep:maybe-rayon", "maybe-rayon/threads", "pasta_curves/sqrt-table"]
 nightly = []
 # Expose some internal functions that can be useful for e.g. FROST.
@@ -72,3 +72,6 @@ zeroize = ["dep:zeroize", "jubjub/zeroize", "pasta_curves/zeroize"]
 [[bench]]
 name = "bench"
 harness = false
+
+[patch.crates-io]
+pasta_curves = { git = "https://github.com/upbqdn/pasta_curves", rev = "43bc26ff9ff1f531aef2c3168269a050e3ec2b99" }

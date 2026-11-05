@@ -4,6 +4,12 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* RedPallas batch verification now tries Pasta's variable-time GLV multiscalar
+  multiplication after batch normalization, retaining the NAF fallback when the
+  dispatcher declines the input shape. Signature validation and the public API
+  are unchanged. Requires the first `pasta_curves` release with
+  `CurveExt::try_multiexp_vartime` (zcash/pasta_curves#182); until then reddsa
+  builds this only with a `[patch]` to Pasta's main branch.
 * RedPallas signature batches decode public points together, optionally in
   parallel with the new `multicore` feature. `std` and `multicore` builds enable
   Pasta's square-root tables for interleaved decoding. Scalar/R/key error
