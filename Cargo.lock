@@ -540,7 +540,7 @@ dependencies = [
 [[package]]
 name = "pasta_curves"
 version = "0.6.1"
-source = "git+https://github.com/upbqdn/pasta_curves?rev=4b20f4643237207efccf300f1288d7007947e17e#4b20f4643237207efccf300f1288d7007947e17e"
+source = "git+https://github.com/upbqdn/pasta_curves?rev=4388b5847b144d8c83094a57caf0ad510cf36677#4388b5847b144d8c83094a57caf0ad510cf36677"
 dependencies = [
  "blake2b_simd",
  "ff",
@@ -950,7 +950,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys",
