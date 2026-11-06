@@ -41,6 +41,29 @@ fn gen_128_bits<R: Rng + CryptoRng>(mut rng: R) -> [u64; 4] {
     bytes
 }
 
+/// Retain native keys without allocating or discarding their canonical bytes.
+#[derive(Copy, Clone, Debug)]
+enum BatchKey<T: SigType> {
+    Bytes(VerificationKeyBytes<T>),
+    Key(VerificationKey<T>),
+}
+
+impl<T: SigType> BatchKey<T> {
+    fn bytes(&self) -> VerificationKeyBytes<T> {
+        match self {
+            Self::Bytes(bytes) => *bytes,
+            Self::Key(key) => key.bytes,
+        }
+    }
+
+    fn into_key(self) -> Result<VerificationKey<T>, Error> {
+        match self {
+            Self::Bytes(bytes) => VerificationKey::try_from(bytes),
+            Self::Key(key) => Ok(key),
+        }
+    }
+}
+
 /// Inner type of a batch verification item.
 ///
 /// This struct exists to allow batch processing to be decoupled from the
@@ -53,13 +76,13 @@ fn gen_128_bits<R: Rng + CryptoRng>(mut rng: R) -> [u64; 4] {
 enum Inner<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> {
     /// A RedDSA signature using the SpendAuth generator group element.
     SpendAuth {
-        vk_bytes: VerificationKeyBytes<S>,
+        vk: BatchKey<S>,
         sig: Signature<S>,
         c: S::Scalar,
     },
     /// A RedDSA signature using the Binding generator group element.
     Binding {
-        vk_bytes: VerificationKeyBytes<B>,
+        vk: BatchKey<B>,
         sig: Signature<B>,
         c: B::Scalar,
     },
@@ -82,14 +105,29 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         sig: Signature<S>,
         msg: &M,
     ) -> Self {
+        Self::spendauth(BatchKey::Bytes(vk_bytes), sig, msg)
+    }
+
+    /// Creates an item retaining an existing spend authorization key's point.
+    ///
+    /// The challenge still hashes the key's canonical encoding.
+    pub fn from_spendauth_key<M: AsRef<[u8]>>(
+        vk: VerificationKey<S>,
+        sig: Signature<S>,
+        msg: &M,
+    ) -> Self {
+        Self::spendauth(BatchKey::Key(vk), sig, msg)
+    }
+
+    fn spendauth<M: AsRef<[u8]>>(vk: BatchKey<S>, sig: Signature<S>, msg: &M) -> Self {
         // Compute c now to avoid dependency on the msg lifetime.
         let c = HStar::<S>::default()
             .update(&sig.r_bytes[..])
-            .update(&vk_bytes.bytes[..])
+            .update(&vk.bytes().bytes[..])
             .update(msg)
             .finalize();
         Self {
-            inner: Inner::SpendAuth { vk_bytes, sig, c },
+            inner: Inner::SpendAuth { vk, sig, c },
         }
     }
 
@@ -99,14 +137,29 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         sig: Signature<B>,
         msg: &M,
     ) -> Self {
+        Self::binding(BatchKey::Bytes(vk_bytes), sig, msg)
+    }
+
+    /// Creates an item retaining an existing binding key's point.
+    ///
+    /// The challenge still hashes the key's canonical encoding.
+    pub fn from_binding_key<M: AsRef<[u8]>>(
+        vk: VerificationKey<B>,
+        sig: Signature<B>,
+        msg: &M,
+    ) -> Self {
+        Self::binding(BatchKey::Key(vk), sig, msg)
+    }
+
+    fn binding<M: AsRef<[u8]>>(vk: BatchKey<B>, sig: Signature<B>, msg: &M) -> Self {
         // Compute c now to avoid dependency on the msg lifetime.
         let c = HStar::<B>::default()
             .update(&sig.r_bytes[..])
-            .update(&vk_bytes.bytes[..])
+            .update(&vk.bytes().bytes[..])
             .update(msg)
             .finalize();
         Self {
-            inner: Inner::Binding { vk_bytes, sig, c },
+            inner: Inner::Binding { vk, sig, c },
         }
     }
 
@@ -120,11 +173,11 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
     #[allow(non_snake_case)]
     pub fn verify_single(self) -> Result<(), Error> {
         match self.inner {
-            Inner::Binding { vk_bytes, sig, c } => {
-                VerificationKey::<B>::try_from(vk_bytes).and_then(|vk| vk.verify_prehashed(&sig, c))
+            Inner::Binding { vk, sig, c } => {
+                vk.into_key().and_then(|vk| vk.verify_prehashed(&sig, c))
             }
-            Inner::SpendAuth { vk_bytes, sig, c } => {
-                VerificationKey::<S>::try_from(vk_bytes).and_then(|vk| vk.verify_prehashed(&sig, c))
+            Inner::SpendAuth { vk, sig, c } => {
+                vk.into_key().and_then(|vk| vk.verify_prehashed(&sig, c))
             }
         }
     }
@@ -239,12 +292,8 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
             };
 
             let VK = match item.inner {
-                Inner::SpendAuth { vk_bytes, .. } => {
-                    VerificationKey::<S>::try_from(vk_bytes.bytes)?.point
-                }
-                Inner::Binding { vk_bytes, .. } => {
-                    VerificationKey::<B>::try_from(vk_bytes.bytes)?.point
-                }
+                Inner::SpendAuth { vk, .. } => vk.into_key()?.point,
+                Inner::Binding { vk, .. } => vk.into_key()?.point,
             };
 
             if n == 1 {

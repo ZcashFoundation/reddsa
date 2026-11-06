@@ -229,6 +229,28 @@ fn check_batch_against_naf(inputs: &[BatchInput]) {
         }
     })();
     assert_eq!(batch.verify(ChaChaRng::from_seed([42; 32])), reference);
+
+    // Exercise all-retained and alternating retained/byte-only items against
+    // the same preserved scalar-decoding and NAF arithmetic above.
+    for retain_mod in [1, 2, 3] {
+        let mut retained = batch::Verifier::<orchard::SpendAuth, orchard::Binding>::new();
+        for (i, (binding, vk, sig, msg)) in inputs.iter().enumerate() {
+            let retain = i % retain_mod == 0;
+            let item = if *binding {
+                match VerificationKey::<orchard::Binding>::try_from(*vk) {
+                    Ok(key) if retain => batch::Item::from_binding_key(key, (*sig).into(), msg),
+                    _ => batch::Item::from_binding((*vk).into(), (*sig).into(), msg),
+                }
+            } else {
+                match VerificationKey::<orchard::SpendAuth>::try_from(*vk) {
+                    Ok(key) if retain => batch::Item::from_spendauth_key(key, (*sig).into(), msg),
+                    _ => batch::Item::from_spendauth((*vk).into(), (*sig).into(), msg),
+                }
+            };
+            retained.queue(item);
+        }
+        assert_eq!(retained.verify(ChaChaRng::from_seed([42; 32])), reference);
+    }
 }
 
 #[test]
@@ -260,7 +282,7 @@ fn orchard_batches_match_naf_acceptance_and_errors() {
             continue;
         }
         for position in [0, n / 2, n - 1] {
-            for mutation in 0..7 {
+            for mutation in 0..9 {
                 let mut changed = inputs.clone();
                 let (_, vk, sig, msg) = &mut changed[position];
                 match mutation {
@@ -279,10 +301,88 @@ fn orchard_batches_match_naf_acceptance_and_errors() {
                         sig[..32].copy_from_slice(vk);
                         sig[32] = u8::from(mutation == 6);
                     }
+                    7 => {
+                        *vk = [0xff; 32];
+                        sig[..32].fill(0xff);
+                    }
+                    8 => {
+                        *vk = [0xff; 32];
+                        sig.fill(0xff);
+                    }
                     _ => unreachable!(),
                 }
                 check_batch_against_naf(&changed);
             }
         }
+        if n > 1 {
+            // A bad key in an earlier item must beat a later malformed scalar,
+            // and an earlier malformed scalar must beat the later bad key.
+            let mut changed = inputs.clone();
+            changed[0].1 = [0xff; 32];
+            changed[n - 1].2[32..].fill(0xff);
+            check_batch_against_naf(&changed);
+            let mut changed = inputs.clone();
+            changed[0].2[32..].fill(0xff);
+            changed[n - 1].1 = [0xff; 32];
+            check_batch_against_naf(&changed);
+        }
+    }
+}
+
+#[test]
+fn native_keys_and_single_item_fallback_match_byte_keys() {
+    use crate::{batch, orchard, Signature, VerificationKey};
+    use group::Group;
+
+    for point in [pallas::Point::identity(), pallas::Point::generator(), -pallas::Point::generator()] {
+        let binding: VerificationKey<orchard::Binding> = point.into();
+        assert_eq!(binding, VerificationKey::try_from(point.to_bytes()).unwrap());
+        let spend = VerificationKey::<orchard::SpendAuth>::try_from(point.to_bytes()).unwrap();
+        assert_eq!(pallas::Point::from(spend), point);
+
+        for bytes in [[0; 64], [0xff; 64]] {
+            let binding_sig = Signature::<orchard::Binding>::from(bytes);
+            let retained = batch::Item::<orchard::SpendAuth, orchard::Binding>::from_binding_key(
+                binding, binding_sig, &b"canonical challenge",
+            );
+            let byte_only = batch::Item::<orchard::SpendAuth, orchard::Binding>::from_binding(
+                binding.into(), binding_sig, &b"canonical challenge",
+            );
+            assert_eq!(retained.verify_single(), byte_only.verify_single());
+
+            let spend_sig = Signature::<orchard::SpendAuth>::from(bytes);
+            let retained = batch::Item::<orchard::SpendAuth, orchard::Binding>::from_spendauth_key(
+                spend, spend_sig, &b"canonical challenge",
+            );
+            let byte_only = batch::Item::<orchard::SpendAuth, orchard::Binding>::from_spendauth(
+                spend.into(), spend_sig, &b"canonical challenge",
+            );
+            assert_eq!(retained.verify_single(), byte_only.verify_single());
+        }
+    }
+}
+
+#[test]
+fn single_fallback_preserves_key_first_error_order() {
+    use crate::{batch, orchard, Error};
+    use rand_chacha::ChaChaRng;
+    use rand_core::SeedableRng;
+
+    let items = [
+        batch::Item::<orchard::SpendAuth, orchard::Binding>::from_spendauth(
+            [0xff; 32].into(), [0xff; 64].into(), &b"malformed",
+        ),
+        batch::Item::<orchard::SpendAuth, orchard::Binding>::from_binding(
+            [0xff; 32].into(), [0xff; 64].into(), &b"malformed",
+        ),
+    ];
+    for item in items {
+        assert_eq!(item.clone().verify_single(), Err(Error::MalformedVerificationKey));
+        let mut batch = batch::Verifier::<orchard::SpendAuth, orchard::Binding>::new();
+        batch.queue(item);
+        assert_eq!(
+            batch.verify(ChaChaRng::from_seed([11; 32])),
+            Err(Error::InvalidSignature),
+        );
     }
 }

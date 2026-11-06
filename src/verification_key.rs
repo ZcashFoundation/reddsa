@@ -78,6 +78,24 @@ pub struct VerificationKey<T: SigType> {
     pub(crate) bytes: VerificationKeyBytes<T>,
 }
 
+impl From<pasta_curves::pallas::Point> for VerificationKey<crate::orchard::Binding> {
+    /// Retains a valid Pallas binding point and its canonical encoding, including identity.
+    fn from(point: pasta_curves::pallas::Point) -> Self {
+        let bytes = VerificationKeyBytes {
+            bytes: point.to_bytes(),
+            _marker: PhantomData,
+        };
+        VerificationKey { point, bytes }
+    }
+}
+
+impl From<VerificationKey<crate::orchard::SpendAuth>> for pasta_curves::pallas::Point {
+    /// Returns the stored point; protocol-specific identity checks remain the caller's job.
+    fn from(key: VerificationKey<crate::orchard::SpendAuth>) -> Self {
+        key.point
+    }
+}
+
 impl<T: SigType> From<VerificationKey<T>> for VerificationKeyBytes<T> {
     fn from(pk: VerificationKey<T>) -> VerificationKeyBytes<T> {
         pk.bytes
