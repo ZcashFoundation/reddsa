@@ -472,6 +472,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
+name = "maybe-rayon"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ea1f30cedd69f0a2954655f7188c6a834246d2bcf1e315e2ac40c4b24dc9519"
+dependencies = [
+ "cfg-if",
+ "rayon",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -530,11 +540,12 @@ dependencies = [
 [[package]]
 name = "pasta_curves"
 version = "0.6.1"
-source = "git+https://github.com/upbqdn/pasta_curves?rev=98b253b9aacf632ca43b37db02466df039b3842f#98b253b9aacf632ca43b37db02466df039b3842f"
+source = "git+https://github.com/upbqdn/pasta_curves?rev=4b20f4643237207efccf300f1288d7007947e17e#4b20f4643237207efccf300f1288d7007947e17e"
 dependencies = [
  "blake2b_simd",
  "ff",
  "group",
+ "maybe-rayon",
  "rand 0.10.3",
  "static_assertions",
  "subtle",
@@ -753,6 +764,7 @@ dependencies = [
  "hex",
  "jubjub",
  "lazy_static",
+ "maybe-rayon",
  "num-bigint",
  "num-traits",
  "pasta_curves",
@@ -938,7 +950,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys",
