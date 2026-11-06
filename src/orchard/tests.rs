@@ -337,27 +337,33 @@ fn batch_decoding_matches_individual_points() {
 
     let mut rng = ChaChaRng::from_seed([73; 32]);
     for n in [0, 1, 2, 7, 8, 9, 15, 16, 17, 33, 66, 258] {
-        let encodings: Vec<_> = (0..n).map(|i| {
-            match i % 5 {
-                0 => pallas::Point::random(&mut rng).to_bytes(),
-                1 => [0; 32],
-                2 => [0xff; 32],
-                3 => {
-                    let mut bytes = [0; 32];
-                    bytes[31] = 0x80; // Noncanonical signed identity.
-                    bytes
+        let encodings: Vec<_> = (0..n)
+            .map(|i| {
+                match i % 5 {
+                    0 => pallas::Point::random(&mut rng).to_bytes(),
+                    1 => [0; 32],
+                    2 => [0xff; 32],
+                    3 => {
+                        let mut bytes = [0; 32];
+                        bytes[31] = 0x80; // Noncanonical signed identity.
+                        bytes
+                    }
+                    _ => {
+                        let mut bytes = [0; 32];
+                        rng.fill_bytes(&mut bytes);
+                        bytes
+                    }
                 }
-                _ => {
-                    let mut bytes = [0; 32];
-                    rng.fill_bytes(&mut bytes);
-                    bytes
-                }
-            }
-        }).collect();
-        let reference: Vec<_> = encodings.iter()
+            })
+            .collect();
+        let reference: Vec<_> = encodings
+            .iter()
             .map(|bytes| Option::<pallas::Point>::from(pallas::Point::from_bytes(bytes)))
             .collect();
-        assert_eq!(super::batch_decode_pallas_points(encodings.into_iter()), reference);
+        assert_eq!(
+            super::batch_decode_pallas_points(encodings.into_iter()),
+            reference
+        );
     }
 }
 
@@ -366,28 +372,43 @@ fn native_keys_and_single_item_fallback_match_byte_keys() {
     use crate::{batch, orchard, Signature, VerificationKey};
     use group::Group;
 
-    for point in [pallas::Point::identity(), pallas::Point::generator(), -pallas::Point::generator()] {
+    for point in [
+        pallas::Point::identity(),
+        pallas::Point::generator(),
+        -pallas::Point::generator(),
+    ] {
         let binding: VerificationKey<orchard::Binding> = point.into();
-        assert_eq!(binding, VerificationKey::try_from(point.to_bytes()).unwrap());
+        assert_eq!(
+            binding,
+            VerificationKey::try_from(point.to_bytes()).unwrap()
+        );
         let spend = VerificationKey::<orchard::SpendAuth>::try_from(point.to_bytes()).unwrap();
         assert_eq!(pallas::Point::from(spend), point);
 
         for bytes in [[0; 64], [0xff; 64]] {
             let binding_sig = Signature::<orchard::Binding>::from(bytes);
             let retained = batch::Item::<orchard::SpendAuth, orchard::Binding>::from_binding_key(
-                binding, binding_sig, &b"canonical challenge",
+                binding,
+                binding_sig,
+                &b"canonical challenge",
             );
             let byte_only = batch::Item::<orchard::SpendAuth, orchard::Binding>::from_binding(
-                binding.into(), binding_sig, &b"canonical challenge",
+                binding.into(),
+                binding_sig,
+                &b"canonical challenge",
             );
             assert_eq!(retained.verify_single(), byte_only.verify_single());
 
             let spend_sig = Signature::<orchard::SpendAuth>::from(bytes);
             let retained = batch::Item::<orchard::SpendAuth, orchard::Binding>::from_spendauth_key(
-                spend, spend_sig, &b"canonical challenge",
+                spend,
+                spend_sig,
+                &b"canonical challenge",
             );
             let byte_only = batch::Item::<orchard::SpendAuth, orchard::Binding>::from_spendauth(
-                spend.into(), spend_sig, &b"canonical challenge",
+                spend.into(),
+                spend_sig,
+                &b"canonical challenge",
             );
             assert_eq!(retained.verify_single(), byte_only.verify_single());
         }
@@ -402,14 +423,21 @@ fn single_fallback_preserves_key_first_error_order() {
 
     let items = [
         batch::Item::<orchard::SpendAuth, orchard::Binding>::from_spendauth(
-            [0xff; 32].into(), [0xff; 64].into(), &b"malformed",
+            [0xff; 32].into(),
+            [0xff; 64].into(),
+            &b"malformed",
         ),
         batch::Item::<orchard::SpendAuth, orchard::Binding>::from_binding(
-            [0xff; 32].into(), [0xff; 64].into(), &b"malformed",
+            [0xff; 32].into(),
+            [0xff; 64].into(),
+            &b"malformed",
         ),
     ];
     for item in items {
-        assert_eq!(item.clone().verify_single(), Err(Error::MalformedVerificationKey));
+        assert_eq!(
+            item.clone().verify_single(),
+            Err(Error::MalformedVerificationKey)
+        );
         let mut batch = batch::Verifier::<orchard::SpendAuth, orchard::Binding>::new();
         batch.queue(item);
         assert_eq!(

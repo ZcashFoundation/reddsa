@@ -103,9 +103,7 @@ impl private::Sealed<Binding> for Binding {
 
 /// Decode public R/key encodings together, retaining input order and failures.
 #[cfg(feature = "alloc")]
-fn batch_decode_pallas_points(
-    items: impl Iterator<Item = [u8; 32]>,
-) -> Vec<Option<pallas::Point>> {
+fn batch_decode_pallas_points(items: impl Iterator<Item = [u8; 32]>) -> Vec<Option<pallas::Point>> {
     use pasta_curves::arithmetic::CurveAffine;
 
     let encodings: Vec<_> = items.collect();
@@ -119,15 +117,17 @@ fn batch_decode_pallas_points(
             let per_thread = encodings.len().div_ceil(threads);
             let chunk = per_thread.div_ceil(per_thread.div_ceil(8));
             let mut points = alloc::vec![None; encodings.len()];
-            encodings.par_chunks(chunk).zip(points.par_chunks_mut(chunk)).for_each(
-                |(encodings, points)| {
-                    for (out, decoded) in points.iter_mut().zip(
-                        <pallas::Affine as CurveAffine>::batch_decode(encodings),
-                    ) {
+            encodings
+                .par_chunks(chunk)
+                .zip(points.par_chunks_mut(chunk))
+                .for_each(|(encodings, points)| {
+                    for (out, decoded) in points
+                        .iter_mut()
+                        .zip(<pallas::Affine as CurveAffine>::batch_decode(encodings))
+                    {
                         *out = decoded.map(pallas::Point::from);
                     }
-                },
-            );
+                });
             return points;
         }
     }

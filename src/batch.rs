@@ -304,7 +304,9 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
             };
 
             let R = if let Some(points) = decoded_points.as_mut() {
-                points.next().expect("one decoded result per encoding")
+                points
+                    .next()
+                    .expect("one decoded result per encoding")
                     .ok_or(Error::InvalidSignature)?
             } else {
                 // XXX-jubjub: should not use CtOption here
@@ -320,11 +322,19 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
             };
 
             let VK = match item.inner {
-                Inner::SpendAuth { vk: BatchKey::Key(key), .. } => key.point,
-                Inner::Binding { vk: BatchKey::Key(key), .. } => key.point,
+                Inner::SpendAuth {
+                    vk: BatchKey::Key(key),
+                    ..
+                } => key.point,
+                Inner::Binding {
+                    vk: BatchKey::Key(key),
+                    ..
+                } => key.point,
                 _ => {
                     if let Some(points) = decoded_points.as_mut() {
-                        points.next().expect("one decoded result per encoding")
+                        points
+                            .next()
+                            .expect("one decoded result per encoding")
                             .ok_or(Error::MalformedVerificationKey)?
                     } else {
                         match item.inner {
