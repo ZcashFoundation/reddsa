@@ -330,6 +330,38 @@ fn orchard_batches_match_naf_acceptance_and_errors() {
 }
 
 #[test]
+fn batch_decoding_matches_individual_points() {
+    use group::Group;
+    use rand_chacha::ChaChaRng;
+    use rand_core::{Rng, SeedableRng};
+
+    let mut rng = ChaChaRng::from_seed([73; 32]);
+    for n in [0, 1, 2, 7, 8, 9, 15, 16, 17, 33, 66, 258] {
+        let encodings: Vec<_> = (0..n).map(|i| {
+            match i % 5 {
+                0 => pallas::Point::random(&mut rng).to_bytes(),
+                1 => [0; 32],
+                2 => [0xff; 32],
+                3 => {
+                    let mut bytes = [0; 32];
+                    bytes[31] = 0x80; // Noncanonical signed identity.
+                    bytes
+                }
+                _ => {
+                    let mut bytes = [0; 32];
+                    rng.fill_bytes(&mut bytes);
+                    bytes
+                }
+            }
+        }).collect();
+        let reference: Vec<_> = encodings.iter()
+            .map(|bytes| Option::<pallas::Point>::from(pallas::Point::from_bytes(bytes)))
+            .collect();
+        assert_eq!(super::batch_decode_pallas_points(encodings.into_iter()), reference);
+    }
+}
+
+#[test]
 fn native_keys_and_single_item_fallback_match_byte_keys() {
     use crate::{batch, orchard, Signature, VerificationKey};
     use group::Group;

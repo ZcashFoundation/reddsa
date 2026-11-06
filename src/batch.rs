@@ -56,6 +56,13 @@ impl<T: SigType> BatchKey<T> {
         }
     }
 
+    fn encoding(&self) -> Option<[u8; 32]> {
+        match self {
+            Self::Bytes(bytes) => Some(bytes.bytes),
+            Self::Key(_) => None,
+        }
+    }
+
     fn into_key(self) -> Result<VerificationKey<T>, Error> {
         match self {
             Self::Bytes(bytes) => VerificationKey::try_from(bytes),
@@ -163,6 +170,15 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         }
     }
 
+    /// Only byte-based keys still need decoding; every signature needs its R.
+    fn point_encodings(&self) -> impl Iterator<Item = [u8; 32]> {
+        let (r, vk) = match &self.inner {
+            Inner::SpendAuth { sig, vk, .. } => (sig.r_bytes, vk.encoding()),
+            Inner::Binding { sig, vk, .. } => (sig.r_bytes, vk.encoding()),
+        };
+        [Some(r), vk].into_iter().flatten()
+    }
+
     /// Perform non-batched verification of this `Item`.
     ///
     /// This is useful (in combination with `Item::clone`) for implementing fallback
@@ -260,6 +276,15 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         let mut P_spendauth_coeff = S::Scalar::ZERO;
         let mut P_binding_coeff = B::Scalar::ZERO;
 
+        // Decode eagerly but consume results only in the original scalar/R/key
+        // validation order. RedJubjub keeps its existing point-by-point decoder.
+        let mut decoded_points = if n > 1 {
+            S::batch_decode_points(self.signatures.iter().flat_map(Item::point_encodings))
+                .map(|points| points.into_iter())
+        } else {
+            None
+        };
+
         for item in self.signatures.iter() {
             let (s_bytes, r_bytes, c) = match item.inner {
                 Inner::SpendAuth { sig, c, .. } => (sig.s_bytes, sig.r_bytes, c),
@@ -278,7 +303,10 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 }
             };
 
-            let R = {
+            let R = if let Some(points) = decoded_points.as_mut() {
+                points.next().expect("one decoded result per encoding")
+                    .ok_or(Error::InvalidSignature)?
+            } else {
                 // XXX-jubjub: should not use CtOption here
                 // XXX-jubjub: inconsistent ownership in from_bytes
                 let mut repr = <S::Point as GroupEncoding>::Repr::default();
@@ -292,8 +320,19 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
             };
 
             let VK = match item.inner {
-                Inner::SpendAuth { vk, .. } => vk.into_key()?.point,
-                Inner::Binding { vk, .. } => vk.into_key()?.point,
+                Inner::SpendAuth { vk: BatchKey::Key(key), .. } => key.point,
+                Inner::Binding { vk: BatchKey::Key(key), .. } => key.point,
+                _ => {
+                    if let Some(points) = decoded_points.as_mut() {
+                        points.next().expect("one decoded result per encoding")
+                            .ok_or(Error::MalformedVerificationKey)?
+                    } else {
+                        match item.inner {
+                            Inner::SpendAuth { vk, .. } => vk.into_key()?.point,
+                            Inner::Binding { vk, .. } => vk.into_key()?.point,
+                        }
+                    }
+                }
             };
 
             if n == 1 {

@@ -14,6 +14,16 @@ verification checks related to the verification key encoding.
 For all specializations of RedDSA used in Zcash, encodings of signing
 and verification keys are 32 bytes.
 
+## Benchmark-only crypto ports
+
+This fork retains verification keys and batches RedPallas point decoding.
+`batch::Item::from_spendauth_key` and `from_binding_key` retain validated points
+while hashing the same canonical key bytes as byte-only items. RedPallas batches
+decode outstanding points through Pasta's `CurveAffine::batch_decode`, optionally
+in parallel with `multicore`. Results are consumed in the existing scalar/R/key
+validation order; RedJubjub decoding and signature random weights are unchanged.
+
+
 ## Examples
 
 Creating a `BindingSig`, serializing and deserializing it, and
