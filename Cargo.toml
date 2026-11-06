@@ -60,7 +60,7 @@ features = ["alloc"]
 [features]
 std = ["blake2b_simd/std", "thiserror", "zeroize", "alloc",
        "serde"] # conditional compilation for serde not complete (issue #9)
-alloc = ["hex"]
+alloc = ["hex", "jubjub/alloc"]
 multicore = ["alloc", "dep:maybe-rayon", "maybe-rayon/threads", "pasta_curves/multicore"]
 nightly = []
 # Expose some internal functions that can be useful for e.g. FROST.
@@ -75,4 +75,4 @@ name = "bench"
 harness = false
 
 [patch.crates-io]
-pasta_curves = { git = "https://github.com/upbqdn/pasta_curves", rev = "98b253b9aacf632ca43b37db02466df039b3842f" }
+pasta_curves = { git = "https://github.com/upbqdn/pasta_curves", rev = "b80bd85008f73f971dc689b1a30e5551e1e957d1" }
