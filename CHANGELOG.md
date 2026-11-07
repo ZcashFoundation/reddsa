@@ -13,6 +13,9 @@ Entries are listed in reverse chronological order.
   verify without random weights or batch accumulator allocations. Neither path
   consumes randomness; malformed-encoding errors and cofactor checks are unchanged.
 
+* `VerificationKey<orchard::Binding>::from_affine` constructs a binding key
+  from normalized coordinates, avoiding another inversion after batch normalization.
+
 ## 0.6.1 - 2026-09-25
 
 * The `serde` feature no longer enables `serde/std`, so it can be used in

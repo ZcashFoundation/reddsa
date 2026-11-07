@@ -78,6 +78,23 @@ pub struct VerificationKey<T: SigType> {
     pub(crate) bytes: VerificationKeyBytes<T>,
 }
 
+impl VerificationKey<crate::orchard::Binding> {
+    /// Constructs a binding key from an already-normalized Pallas point.
+    ///
+    /// Retains its canonical encoding without another projective normalization.
+    /// Identity is accepted.
+    pub fn from_affine(point: pasta_curves::pallas::Affine) -> Self {
+        let bytes = VerificationKeyBytes {
+            bytes: point.to_bytes(),
+            _marker: PhantomData,
+        };
+        VerificationKey {
+            point: point.into(),
+            bytes,
+        }
+    }
+}
+
 impl<T: SigType> From<VerificationKey<T>> for VerificationKeyBytes<T> {
     fn from(pk: VerificationKey<T>) -> VerificationKeyBytes<T> {
         pk.bytes
