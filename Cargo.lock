@@ -530,7 +530,7 @@ dependencies = [
 [[package]]
 name = "pasta_curves"
 version = "0.6.1"
-source = "git+https://github.com/upbqdn/pasta_curves?rev=65e2c6de9546a76eaf9b06970dc9ba198a3acc36#65e2c6de9546a76eaf9b06970dc9ba198a3acc36"
+source = "git+https://github.com/zcash/pasta_curves?rev=f16b2cb5b492223296bf5642bda17ab366aa1955#f16b2cb5b492223296bf5642bda17ab366aa1955"
 dependencies = [
  "blake2b_simd",
  "ff",
