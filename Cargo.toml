@@ -59,7 +59,7 @@ features = ["alloc"]
 [features]
 std = ["blake2b_simd/std", "thiserror", "zeroize", "alloc",
        "serde"] # conditional compilation for serde not complete (issue #9)
-alloc = ["hex"]
+alloc = ["hex", "jubjub/alloc"]
 nightly = []
 # Expose some internal functions that can be useful for e.g. FROST.
 # No SemVer guarantees.

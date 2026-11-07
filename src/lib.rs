@@ -100,6 +100,14 @@ pub(crate) mod private {
         type Point: group::cofactor::CofactorCurve<Scalar = Self::Scalar>;
 
         fn basepoint() -> T::Point;
+
+        /// Returns ordered decoding results when this curve has a batch decoder.
+        #[cfg(feature = "alloc")]
+        fn batch_decode_points(
+            _items: impl Iterator<Item = [u8; 32]>,
+        ) -> Option<alloc::vec::Vec<Option<Self::Point>>> {
+            None
+        }
     }
     impl Sealed<sapling::Binding> for sapling::Binding {
         const H_STAR_PERSONALIZATION: &'static [u8; 16] = b"Zcash_RedJubjubH";
@@ -121,6 +129,20 @@ pub(crate) mod private {
             jubjub::AffinePoint::from_bytes(constants::SPENDAUTHSIG_BASEPOINT_BYTES)
                 .unwrap()
                 .into()
+        }
+
+        #[cfg(feature = "alloc")]
+        fn batch_decode_points(
+            items: impl Iterator<Item = [u8; 32]>,
+        ) -> Option<alloc::vec::Vec<Option<Self::Point>>> {
+            Some(
+                jubjub::AffinePoint::batch_from_bytes(items)
+                    .into_iter()
+                    .map(|point| {
+                        Option::<jubjub::AffinePoint>::from(point).map(jubjub::ExtendedPoint::from)
+                    })
+                    .collect(),
+            )
         }
     }
 }
