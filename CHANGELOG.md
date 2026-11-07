@@ -4,6 +4,9 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* Batch items can retain decoded verification keys for RedJubjub and RedPallas.
+  Native binding-point construction and spend authorization point extraction
+  avoid redundant encoding round trips without changing key acceptance rules.
 * Empty signature batches now return immediately, and single-signature batches
   verify without random weights or batch accumulator allocations. Neither path
   consumes randomness; malformed-encoding errors and cofactor checks are unchanged.
