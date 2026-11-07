@@ -66,6 +66,24 @@ impl<T: SigType> BatchKey<T> {
             Self::Key(key) => Ok(key),
         }
     }
+
+    /// Returns a retained key's point, or consumes the next batch-decoded
+    /// encoding, falling back to individual decoding without a batch decoder.
+    fn batch_point(
+        self,
+        decoded_points: &mut Option<alloc::vec::IntoIter<Option<T::Point>>>,
+    ) -> Result<T::Point, Error> {
+        match self {
+            Self::Key(key) => Ok(key.point),
+            Self::Bytes(bytes) => match decoded_points {
+                Some(points) => points
+                    .next()
+                    .expect("the decoder returns one result per encoding")
+                    .ok_or(Error::MalformedVerificationKey),
+                None => Ok(VerificationKey::try_from(bytes)?.point),
+            },
+        }
+    }
 }
 
 /// Inner type of a batch verification item.
@@ -173,6 +191,28 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         }
     }
 
+    /// Encodings in the order consumed by batch verification; retained keys
+    /// need no decoding.
+    fn point_encodings(&self) -> impl Iterator<Item = [u8; 32]> {
+        let (r_bytes, key_bytes) = match &self.inner {
+            Inner::SpendAuth { sig, vk, .. } => (
+                sig.r_bytes,
+                match vk {
+                    BatchKey::Bytes(bytes) => Some(bytes.bytes),
+                    BatchKey::Key(_) => None,
+                },
+            ),
+            Inner::Binding { sig, vk, .. } => (
+                sig.r_bytes,
+                match vk {
+                    BatchKey::Bytes(bytes) => Some(bytes.bytes),
+                    BatchKey::Key(_) => None,
+                },
+            ),
+        };
+        core::iter::once(r_bytes).chain(key_bytes)
+    }
+
     /// Perform non-batched verification of this `Item`.
     ///
     /// This is useful (in combination with `Item::clone`) for implementing fallback
@@ -270,6 +310,15 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         let mut P_spendauth_coeff = S::Scalar::ZERO;
         let mut P_binding_coeff = B::Scalar::ZERO;
 
+        // Decode public points together, but consume failures in the original
+        // scalar/R/key order, including errors across item boundaries.
+        let mut decoded_points = if n > 1 {
+            S::batch_decode_points(self.signatures.iter().flat_map(Item::point_encodings))
+                .map(|points| points.into_iter())
+        } else {
+            None
+        };
+
         for item in self.signatures.iter() {
             let (s_bytes, r_bytes, c) = match item.inner {
                 Inner::SpendAuth { sig, c, .. } => (sig.s_bytes, sig.r_bytes, c),
@@ -288,7 +337,12 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 }
             };
 
-            let R = {
+            let R = if let Some(points) = decoded_points.as_mut() {
+                points
+                    .next()
+                    .expect("the decoder returns one result per encoding")
+                    .ok_or(Error::InvalidSignature)?
+            } else {
                 // XXX-jubjub: should not use CtOption here
                 // XXX-jubjub: inconsistent ownership in from_bytes
                 let mut repr = <S::Point as GroupEncoding>::Repr::default();
@@ -302,8 +356,8 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
             };
 
             let VK = match item.inner {
-                Inner::SpendAuth { vk, .. } => vk.into_key()?.point,
-                Inner::Binding { vk, .. } => vk.into_key()?.point,
+                Inner::SpendAuth { vk, .. } => vk.batch_point(&mut decoded_points)?,
+                Inner::Binding { vk, .. } => vk.batch_point(&mut decoded_points)?,
             };
 
             // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/498).
