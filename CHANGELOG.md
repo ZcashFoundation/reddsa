@@ -4,6 +4,11 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* RedPallas signature batches decode public points together, optionally in
+  parallel with the new `multicore` feature. Allocation-enabled builds enable
+  Pasta's square-root tables for interleaved decoding. Scalar/R/key error
+  precedence and random weight consumption are unchanged.
+
 ## 0.6.1 - 2026-09-25
 
 * The `serde` feature no longer enables `serde/std`, so it can be used in
