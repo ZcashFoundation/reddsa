@@ -360,3 +360,52 @@ fn jubjub_batch_decoding_preserves_zip216_and_torsion() {
         }
     }
 }
+
+#[test]
+fn pallas_batch_decoding_matches_individual_points() {
+    use pasta_curves::pallas;
+
+    let mut rng = ChaChaRng::from_seed([73; 32]);
+    for n in [0, 1, 2, 7, 8, 9, 15, 16, 17, 33, 66, 258] {
+        let encodings: Vec<_> = (0..n)
+            .map(|i| match i % 5 {
+                0 => pallas::Point::random(&mut rng).to_bytes(),
+                1 => [0; 32],
+                2 => [0xff; 32],
+                3 => {
+                    let mut bytes = [0; 32];
+                    bytes[31] = 0x80; // Noncanonical signed identity.
+                    bytes
+                }
+                _ => {
+                    let mut bytes = [0; 32];
+                    rng.fill_bytes(&mut bytes);
+                    bytes
+                }
+            })
+            .collect();
+        let expected: Vec<_> = encodings
+            .iter()
+            .map(|bytes| Option::<pallas::Point>::from(pallas::Point::from_bytes(bytes)))
+            .collect();
+        let check = || {
+            assert_eq!(
+                orchard::SpendAuth::batch_decode_points(encodings.iter().copied()).unwrap(),
+                expected
+            );
+            assert_eq!(
+                orchard::Binding::batch_decode_points(encodings.iter().copied()).unwrap(),
+                expected
+            );
+        };
+        check();
+        #[cfg(feature = "multicore")]
+        for threads in [1, 2, 4, 8] {
+            maybe_rayon::ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .build()
+                .unwrap()
+                .install(check);
+        }
+    }
+}

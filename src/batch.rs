@@ -315,12 +315,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
         // Decode public points together, but consume failures in the original
         // scalar/R/key order, including errors across item boundaries.
-        let mut decoded_points = if n > 1 {
-            S::batch_decode_points(self.signatures.iter().flat_map(Item::point_encodings))
-                .map(|points| points.into_iter())
-        } else {
-            None
-        };
+        let mut decoded_points = None;
 
         for item in self.signatures.iter() {
             let (s_bytes, r_bytes, c) = match item.inner {
@@ -339,6 +334,14 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                     return Err(Error::InvalidSignature);
                 }
             };
+            let decoded_points = decoded_points.get_or_insert_with(|| {
+                if n > 1 {
+                    S::batch_decode_points(self.signatures.iter().flat_map(Item::point_encodings))
+                        .map(|points| points.into_iter())
+                } else {
+                    None
+                }
+            });
 
             // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
             let R = if let Some(points) = decoded_points.as_mut() {
@@ -361,8 +364,8 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
 
             // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
             let VK = match item.inner {
-                Inner::SpendAuth { vk, .. } => vk.batch_point(&mut decoded_points)?,
-                Inner::Binding { vk, .. } => vk.batch_point(&mut decoded_points)?,
+                Inner::SpendAuth { vk, .. } => vk.batch_point(decoded_points)?,
+                Inner::Binding { vk, .. } => vk.batch_point(decoded_points)?,
             };
 
             // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/498).
