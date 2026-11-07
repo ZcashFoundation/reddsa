@@ -4,6 +4,8 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* `VerificationKey<orchard::Binding>::from_affine` constructs a binding key
+  from normalized coordinates, avoiding another inversion after batch normalization.
 * RedPallas batch verification now tries Pasta's variable-time GLV multiscalar
   multiplication after batch normalization, retaining the NAF fallback when the
   dispatcher declines the input shape. Signature validation and the public API
