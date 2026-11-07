@@ -7,6 +7,10 @@ Entries are listed in reverse chronological order.
 * Empty signature batches now return immediately, and single-signature batches
   verify without random weights or batch accumulator allocations. Neither path
   consumes randomness; malformed-encoding errors and cofactor checks are unchanged.
+* RedPallas signature batches decode public points together, optionally in
+  parallel with the new `multicore` feature. Allocation-enabled builds enable
+  Pasta's square-root tables for interleaved decoding. Scalar/R/key error
+  precedence and random weight consumption are unchanged. Requires `pasta_curves` 0.6.2.
 
 ## 0.6.1 - 2026-09-25
 
