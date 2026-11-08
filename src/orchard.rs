@@ -1,5 +1,8 @@
 //! Signature types for the Orchard protocol.
 
+// Portions copyright (c) The Zakura Contributors, licensed under the MIT license or the
+// Apache License, Version 2.0, at your option.
+
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 #[cfg(feature = "alloc")]
@@ -75,6 +78,7 @@ impl private::Sealed<SpendAuth> for SpendAuth {
         pallas::Point::from_bytes(&ORCHARD_SPENDAUTHSIG_BASEPOINT_BYTES).unwrap()
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/691).
     #[cfg(feature = "alloc")]
     fn batch_decode_points(
         items: impl Iterator<Item = [u8; 32]>,
@@ -91,6 +95,7 @@ impl private::Sealed<Binding> for Binding {
         pallas::Point::from_bytes(&ORCHARD_BINDINGSIG_BASEPOINT_BYTES).unwrap()
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/691).
     #[cfg(feature = "alloc")]
     fn batch_decode_points(
         items: impl Iterator<Item = [u8; 32]>,
@@ -99,6 +104,7 @@ impl private::Sealed<Binding> for Binding {
     }
 }
 
+// Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/691).
 /// Decode public R/key encodings together, retaining input order and failures.
 #[cfg(feature = "alloc")]
 fn batch_decode_pallas_points(items: impl Iterator<Item = [u8; 32]>) -> Vec<Option<pallas::Point>> {
@@ -112,6 +118,7 @@ fn batch_decode_pallas_points(items: impl Iterator<Item = [u8; 32]>) -> Vec<Opti
     {
         use maybe_rayon::prelude::*;
 
+        // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/693).
         let threads = maybe_rayon::current_num_threads();
         if threads >= 2 && encodings.len() >= 16 {
             // Balance each worker's share into tasks of at most eight decoder lanes.
