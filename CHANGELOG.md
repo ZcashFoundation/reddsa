@@ -4,6 +4,9 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* Final RedPallas batch-MSM preparation explicitly uses variable-time normalization
+  for public signature points, verification keys and fixed generators, without changing
+  ordinary field inversion or secret-key arithmetic.
 * `VerificationKey<orchard::Binding>::from_affine` constructs a binding key
   from normalized coordinates, avoiding another inversion after batch normalization.
 * RedPallas batch verification now tries Pasta's variable-time GLV multiscalar
