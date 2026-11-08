@@ -2,6 +2,8 @@
 //
 // This file is part of reddsa.
 // Copyright (c) 2019-2021 Zcash Foundation
+// Portions copyright (c) The Zakura Contributors, licensed under the MIT license or the
+// Apache License, Version 2.0, at your option.
 // See LICENSE for licensing information.
 //
 // Authors:
@@ -247,6 +249,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 }
             };
 
+            // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/498).
             if n == 1 {
                 // Unlike Item::verify_single, retain the batch decoding order
                 // above so malformed signatures take precedence over bad keys.
