@@ -43,6 +43,7 @@ fn gen_128_bits<R: Rng + CryptoRng>(mut rng: R) -> [u64; 4] {
     bytes
 }
 
+// Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/676).
 /// Retain native keys without allocating or discarding their canonical bytes.
 #[derive(Copy, Clone, Debug)]
 enum BatchKey<T: SigType> {
@@ -50,6 +51,7 @@ enum BatchKey<T: SigType> {
     Key(VerificationKey<T>),
 }
 
+// Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/676).
 impl<T: SigType> BatchKey<T> {
     fn bytes(&self) -> VerificationKeyBytes<T> {
         match self {
@@ -101,6 +103,7 @@ pub struct Item<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> 
 }
 
 impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> {
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/676).
     /// Create a batch item from a `SpendAuth` signature.
     pub fn from_spendauth<M: AsRef<[u8]>>(
         vk_bytes: VerificationKeyBytes<S>,
@@ -110,6 +113,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         Self::spendauth(BatchKey::Bytes(vk_bytes), sig, msg)
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/676).
     /// Creates an item retaining an existing spend authorization key's point.
     ///
     /// The challenge still hashes the key's canonical encoding.
@@ -121,6 +125,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         Self::spendauth(BatchKey::Key(vk), sig, msg)
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/676).
     fn spendauth<M: AsRef<[u8]>>(vk: BatchKey<S>, sig: Signature<S>, msg: &M) -> Self {
         // Compute c now to avoid dependency on the msg lifetime.
         let c = HStar::<S>::default()
@@ -133,6 +138,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         }
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/676).
     /// Create a batch item from a `Binding` signature.
     pub fn from_binding<M: AsRef<[u8]>>(
         vk_bytes: VerificationKeyBytes<B>,
@@ -142,6 +148,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         Self::binding(BatchKey::Bytes(vk_bytes), sig, msg)
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/676).
     /// Creates an item retaining an existing binding key's point.
     ///
     /// The challenge still hashes the key's canonical encoding.
@@ -153,6 +160,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         Self::binding(BatchKey::Key(vk), sig, msg)
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/676).
     fn binding<M: AsRef<[u8]>>(vk: BatchKey<B>, sig: Signature<B>, msg: &M) -> Self {
         // Compute c now to avoid dependency on the msg lifetime.
         let c = HStar::<B>::default()
