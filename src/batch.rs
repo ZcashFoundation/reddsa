@@ -112,6 +112,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         }
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
     /// Encodings in the order consumed by batch verification.
     fn point_encodings(&self) -> [[u8; 32]; 2] {
         match &self.inner {
@@ -217,6 +218,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         let mut P_spendauth_coeff = S::Scalar::ZERO;
         let mut P_binding_coeff = B::Scalar::ZERO;
 
+        // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
         // Decode public points together, but consume failures in the original
         // scalar/R/key order, including errors across item boundaries.
         let mut decoded_points = if n > 1 {
@@ -244,6 +246,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 }
             };
 
+            // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
             let R = if let Some(points) = decoded_points.as_mut() {
                 points
                     .next()
@@ -262,6 +265,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 }
             };
 
+            // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
             let VK = if let Some(points) = decoded_points.as_mut() {
                 points
                     .next()
