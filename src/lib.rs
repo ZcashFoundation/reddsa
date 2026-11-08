@@ -2,6 +2,8 @@
 //
 // This file is part of reddsa.
 // Copyright (c) 2019-2021 Zcash Foundation
+// Portions copyright (c) The Zakura Contributors, licensed under the MIT license or the
+// Apache License, Version 2.0, at your option.
 // See LICENSE for licensing information.
 //
 // Authors:
@@ -101,6 +103,7 @@ pub(crate) mod private {
 
         fn basepoint() -> T::Point;
 
+        // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
         /// Returns ordered decoding results when this curve has a batch decoder.
         #[cfg(feature = "alloc")]
         fn batch_decode_points(
@@ -131,6 +134,7 @@ pub(crate) mod private {
                 .into()
         }
 
+        // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
         #[cfg(feature = "alloc")]
         fn batch_decode_points(
             items: impl Iterator<Item = [u8; 32]>,

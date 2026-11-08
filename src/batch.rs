@@ -67,6 +67,7 @@ impl<T: SigType> BatchKey<T> {
         }
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
     /// Returns a retained key's point, or consumes the next batch-decoded
     /// encoding, falling back to individual decoding without a batch decoder.
     fn batch_point(
@@ -191,6 +192,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         }
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
     /// Encodings in the order consumed by batch verification; retained keys
     /// need no decoding.
     fn point_encodings(&self) -> impl Iterator<Item = [u8; 32]> {
@@ -310,6 +312,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         let mut P_spendauth_coeff = S::Scalar::ZERO;
         let mut P_binding_coeff = B::Scalar::ZERO;
 
+        // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
         // Decode public points together, but consume failures in the original
         // scalar/R/key order, including errors across item boundaries.
         let mut decoded_points = if n > 1 {
@@ -337,6 +340,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 }
             };
 
+            // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
             let R = if let Some(points) = decoded_points.as_mut() {
                 points
                     .next()
@@ -355,6 +359,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 }
             };
 
+            // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
             let VK = match item.inner {
                 Inner::SpendAuth { vk, .. } => vk.batch_point(&mut decoded_points)?,
                 Inner::Binding { vk, .. } => vk.batch_point(&mut decoded_points)?,
