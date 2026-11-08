@@ -2,6 +2,8 @@
 //
 // This file is part of reddsa.
 // Copyright (c) 2019-2021 Zcash Foundation
+// Portions copyright (c) The Zakura Contributors, licensed under the MIT license or the
+// Apache License, Version 2.0, at your option.
 // See LICENSE for licensing information.
 //
 // Authors:
@@ -110,6 +112,15 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Item<S, B> 
         }
     }
 
+    // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
+    /// Encodings in the order consumed by batch verification.
+    fn point_encodings(&self) -> [[u8; 32]; 2] {
+        match &self.inner {
+            Inner::SpendAuth { sig, vk_bytes, .. } => [sig.r_bytes, vk_bytes.bytes],
+            Inner::Binding { sig, vk_bytes, .. } => [sig.r_bytes, vk_bytes.bytes],
+        }
+    }
+
     /// Perform non-batched verification of this `Item`.
     ///
     /// This is useful (in combination with `Item::clone`) for implementing fallback
@@ -198,6 +209,16 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         let mut P_spendauth_coeff = S::Scalar::ZERO;
         let mut P_binding_coeff = B::Scalar::ZERO;
 
+        // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
+        // Decode public points together, but consume failures in the original
+        // scalar/R/key order, including errors across item boundaries.
+        let mut decoded_points = if n > 1 {
+            S::batch_decode_points(self.signatures.iter().flat_map(Item::point_encodings))
+                .map(|points| points.into_iter())
+        } else {
+            None
+        };
+
         for item in self.signatures.iter() {
             let (s_bytes, r_bytes, c) = match item.inner {
                 Inner::SpendAuth { sig, c, .. } => (sig.s_bytes, sig.r_bytes, c),
@@ -216,7 +237,13 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 }
             };
 
-            let R = {
+            // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
+            let R = if let Some(points) = decoded_points.as_mut() {
+                points
+                    .next()
+                    .expect("the decoder returns one result per encoding")
+                    .ok_or(Error::InvalidSignature)?
+            } else {
                 // XXX-jubjub: should not use CtOption here
                 // XXX-jubjub: inconsistent ownership in from_bytes
                 let mut repr = <S::Point as GroupEncoding>::Repr::default();
@@ -229,12 +256,20 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 }
             };
 
-            let VK = match item.inner {
-                Inner::SpendAuth { vk_bytes, .. } => {
-                    VerificationKey::<S>::try_from(vk_bytes.bytes)?.point
-                }
-                Inner::Binding { vk_bytes, .. } => {
-                    VerificationKey::<B>::try_from(vk_bytes.bytes)?.point
+            // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/481).
+            let VK = if let Some(points) = decoded_points.as_mut() {
+                points
+                    .next()
+                    .expect("the decoder returns one result per encoding")
+                    .ok_or(Error::MalformedVerificationKey)?
+            } else {
+                match item.inner {
+                    Inner::SpendAuth { vk_bytes, .. } => {
+                        VerificationKey::<S>::try_from(vk_bytes.bytes)?.point
+                    }
+                    Inner::Binding { vk_bytes, .. } => {
+                        VerificationKey::<B>::try_from(vk_bytes.bytes)?.point
+                    }
                 }
             };
 
@@ -276,3 +311,6 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
