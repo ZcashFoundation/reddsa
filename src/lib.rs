@@ -33,6 +33,7 @@ pub mod sapling;
 mod scalar_mul;
 pub(crate) mod signature;
 mod signing_key;
+pub mod trusted;
 mod verification_key;
 
 /// An element of the protocol's scalar field used for randomization of public and secret keys.

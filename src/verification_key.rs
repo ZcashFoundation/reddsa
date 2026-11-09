@@ -68,14 +68,22 @@ impl<T: SigType> From<VerificationKeyBytes<T>> for [u8; 32] {
 ///
 /// 1. The check that the bytes are a canonical encoding of a verification key;
 /// 2. The check that the verification key is not a point of small order.
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "VerificationKeyBytes<T>"))]
 #[cfg_attr(feature = "serde", serde(into = "VerificationKeyBytes<T>"))]
 #[cfg_attr(feature = "serde", serde(bound = "T: SigType"))]
 pub struct VerificationKey<T: SigType> {
-    // Proof of concept: only the encoding is stored; the point is decompressed on use.
+    // `None` only for keys parsed inside `trusted::with_trusted_encodings`.
+    pub(crate) point: Option<T::Point>,
     pub(crate) bytes: VerificationKeyBytes<T>,
+}
+
+// The encoding determines the point, so keys with and without a decoded point compare equal.
+impl<T: SigType> PartialEq for VerificationKey<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bytes == other.bytes
+    }
 }
 
 impl<T: SigType> From<VerificationKey<T>> for VerificationKeyBytes<T> {
@@ -94,14 +102,42 @@ impl<T: SigType> TryFrom<VerificationKeyBytes<T>> for VerificationKey<T> {
     type Error = Error;
 
     fn try_from(bytes: VerificationKeyBytes<T>) -> Result<Self, Self::Error> {
-        // Proof of concept: the encoding is checked when the key is first used.
-        Ok(VerificationKey { bytes })
+        // The caller validated these bytes before, so decompress the point on first use.
+        if crate::trusted::encodings_are_trusted() {
+            return Ok(VerificationKey { point: None, bytes });
+        }
+        // XXX-jubjub: this should not use CtOption
+        // XXX-jubjub: this takes ownership of bytes, while Fr doesn't.
+        // This checks that the encoding is canonical...
+        let mut repr = <T::Point as GroupEncoding>::Repr::default();
+        repr.as_mut().copy_from_slice(&bytes.bytes);
+        let maybe_point = T::Point::from_bytes(&repr);
+        if maybe_point.is_some().into() {
+            let point = maybe_point.unwrap();
+            // Note that small-order verification keys (including the identity) are not
+            // rejected here. Previously they were rejected, but this was a bug as the
+            // RedDSA specification allows them. Zcash Sapling rejects small-order points
+            // for the RedJubjub spend authorization key rk; this now occurs separately.
+            // Meanwhile, Zcash Orchard uses a prime-order group, so the only small-order
+            // point would be the identity, which is allowed in Orchard.
+            Ok(VerificationKey {
+                point: Some(point),
+                bytes,
+            })
+        } else {
+            Err(Error::MalformedVerificationKey)
+        }
     }
 }
 
 impl<T: SigType> VerificationKey<T> {
-    /// Decompresses the point, or returns an error if the encoding is not canonical.
+    /// Returns the point, decompressing it if the key was parsed from bytes.
+    ///
+    /// Small-order points, including the identity, are accepted, as before.
     pub(crate) fn point(&self) -> Result<T::Point, Error> {
+        if let Some(point) = self.point {
+            return Ok(point);
+        }
         let mut repr = <T::Point as GroupEncoding>::Repr::default();
         repr.as_mut().copy_from_slice(&self.bytes.bytes);
         Option::from(T::Point::from_bytes(&repr)).ok_or(Error::MalformedVerificationKey)
@@ -121,13 +157,15 @@ impl<T: SpendAuth> VerificationKey<T> {
     ///
     /// Randomization is only supported for `SpendAuth` keys.
     pub fn randomize(&self, randomizer: &Randomizer<T>) -> VerificationKey<T> {
-        let point =
-            self.point().expect("randomized keys are valid") + (T::basepoint() * randomizer);
+        let point = self.point().expect("trusted keys are valid") + (T::basepoint() * randomizer);
         let bytes = VerificationKeyBytes {
             bytes: point.to_bytes().as_ref().try_into().unwrap(),
             _marker: PhantomData,
         };
-        VerificationKey { bytes }
+        VerificationKey {
+            bytes,
+            point: Some(point),
+        }
     }
 }
 
@@ -138,7 +176,10 @@ impl<T: SigType> VerificationKey<T> {
             bytes: point.to_bytes().as_ref().try_into().unwrap(),
             _marker: PhantomData,
         };
-        VerificationKey { bytes }
+        VerificationKey {
+            bytes,
+            point: Some(point),
+        }
     }
 
     /// Verify a purported `signature` over `msg` made by this verification key.
@@ -160,6 +201,8 @@ impl<T: SigType> VerificationKey<T> {
         signature: &Signature<T>,
         c: T::Scalar,
     ) -> Result<(), Error> {
+        // Decode the key first, so its error still takes precedence over the signature's.
+        let a = self.point()?;
         let r = {
             // XXX-jubjub: should not use CtOption here
             // XXX-jubjub: inconsistent ownership in from_bytes
@@ -189,7 +232,7 @@ impl<T: SigType> VerificationKey<T> {
         // Verify check is h * ( - s * B + R  + c * A) == 0
         //                 h * ( s * B - c * A - R) == 0
         let sB = T::basepoint() * s;
-        let cA = self.point()? * c;
+        let cA = a * c;
         let check = sB - cA - r;
 
         if check.is_small_order().into() {
