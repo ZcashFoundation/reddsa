@@ -231,10 +231,10 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
 
             let VK = match item.inner {
                 Inner::SpendAuth { vk_bytes, .. } => {
-                    VerificationKey::<S>::try_from(vk_bytes.bytes)?.point
+                    VerificationKey::<S>::try_from(vk_bytes.bytes)?.point()?
                 }
                 Inner::Binding { vk_bytes, .. } => {
-                    VerificationKey::<B>::try_from(vk_bytes.bytes)?.point
+                    VerificationKey::<B>::try_from(vk_bytes.bytes)?.point()?
                 }
             };
 

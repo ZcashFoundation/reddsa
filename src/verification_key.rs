@@ -74,7 +74,7 @@ impl<T: SigType> From<VerificationKeyBytes<T>> for [u8; 32] {
 #[cfg_attr(feature = "serde", serde(into = "VerificationKeyBytes<T>"))]
 #[cfg_attr(feature = "serde", serde(bound = "T: SigType"))]
 pub struct VerificationKey<T: SigType> {
-    pub(crate) point: T::Point,
+    // Proof of concept: only the encoding is stored; the point is decompressed on use.
     pub(crate) bytes: VerificationKeyBytes<T>,
 }
 
@@ -94,24 +94,17 @@ impl<T: SigType> TryFrom<VerificationKeyBytes<T>> for VerificationKey<T> {
     type Error = Error;
 
     fn try_from(bytes: VerificationKeyBytes<T>) -> Result<Self, Self::Error> {
-        // XXX-jubjub: this should not use CtOption
-        // XXX-jubjub: this takes ownership of bytes, while Fr doesn't.
-        // This checks that the encoding is canonical...
+        // Proof of concept: the encoding is checked when the key is first used.
+        Ok(VerificationKey { bytes })
+    }
+}
+
+impl<T: SigType> VerificationKey<T> {
+    /// Decompresses the point, or returns an error if the encoding is not canonical.
+    pub(crate) fn point(&self) -> Result<T::Point, Error> {
         let mut repr = <T::Point as GroupEncoding>::Repr::default();
-        repr.as_mut().copy_from_slice(&bytes.bytes);
-        let maybe_point = T::Point::from_bytes(&repr);
-        if maybe_point.is_some().into() {
-            let point = maybe_point.unwrap();
-            // Note that small-order verification keys (including the identity) are not
-            // rejected here. Previously they were rejected, but this was a bug as the
-            // RedDSA specification allows them. Zcash Sapling rejects small-order points
-            // for the RedJubjub spend authorization key rk; this now occurs separately.
-            // Meanwhile, Zcash Orchard uses a prime-order group, so the only small-order
-            // point would be the identity, which is allowed in Orchard.
-            Ok(VerificationKey { point, bytes })
-        } else {
-            Err(Error::MalformedVerificationKey)
-        }
+        repr.as_mut().copy_from_slice(&self.bytes.bytes);
+        Option::from(T::Point::from_bytes(&repr)).ok_or(Error::MalformedVerificationKey)
     }
 }
 
@@ -128,12 +121,13 @@ impl<T: SpendAuth> VerificationKey<T> {
     ///
     /// Randomization is only supported for `SpendAuth` keys.
     pub fn randomize(&self, randomizer: &Randomizer<T>) -> VerificationKey<T> {
-        let point = self.point + (T::basepoint() * randomizer);
+        let point =
+            self.point().expect("randomized keys are valid") + (T::basepoint() * randomizer);
         let bytes = VerificationKeyBytes {
             bytes: point.to_bytes().as_ref().try_into().unwrap(),
             _marker: PhantomData,
         };
-        VerificationKey { bytes, point }
+        VerificationKey { bytes }
     }
 }
 
@@ -144,7 +138,7 @@ impl<T: SigType> VerificationKey<T> {
             bytes: point.to_bytes().as_ref().try_into().unwrap(),
             _marker: PhantomData,
         };
-        VerificationKey { bytes, point }
+        VerificationKey { bytes }
     }
 
     /// Verify a purported `signature` over `msg` made by this verification key.
@@ -195,7 +189,7 @@ impl<T: SigType> VerificationKey<T> {
         // Verify check is h * ( - s * B + R  + c * A) == 0
         //                 h * ( s * B - c * A - R) == 0
         let sB = T::basepoint() * s;
-        let cA = self.point * c;
+        let cA = self.point()? * c;
         let check = sB - cA - r;
 
         if check.is_small_order().into() {
