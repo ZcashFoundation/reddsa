@@ -7,7 +7,7 @@ use core::borrow::Borrow;
 
 use group::GroupEncoding;
 #[cfg(feature = "alloc")]
-use group::{ff::PrimeField, Curve, Group};
+use group::{ff::PrimeField, Group};
 #[cfg(feature = "alloc")]
 use pasta_curves::arithmetic::CurveExt;
 use pasta_curves::pallas;
@@ -128,10 +128,10 @@ impl VartimeMultiscalarMul for pallas::Point {
     {
         let scalars: Vec<_> = scalars.into_iter().map(|c| *c.borrow()).collect();
         let points = points.into_iter().collect::<Option<Vec<_>>>()?;
-        // Batch verification uses only public scalars and points. Normalize together so the
-        // variable-time backend pays for one inversion rather than one per point.
+        // Signature R points, verification keys and fixed generators are public.
+        // The random batch weights are verifier-local, but do not affect these points.
         let mut affine = alloc::vec![pallas::Affine::default(); points.len()];
-        Self::batch_normalize(&points, &mut affine);
+        Self::batch_normalize_vartime(&points, &mut affine);
         Self::try_multiexp_vartime(&scalars, &affine)
             .or_else(|| Some(pallas_multiscalar_mul_naf(&scalars, &points)))
     }
