@@ -7,7 +7,9 @@ use core::borrow::Borrow;
 
 use group::GroupEncoding;
 #[cfg(feature = "alloc")]
-use group::{ff::PrimeField, Group};
+use group::{ff::PrimeField, Curve, Group};
+#[cfg(feature = "alloc")]
+use pasta_curves::arithmetic::CurveExt;
 use pasta_curves::pallas;
 
 use crate::{private, SigType};
@@ -124,34 +126,44 @@ impl VartimeMultiscalarMul for pallas::Point {
         I::Item: Borrow<Self::Scalar>,
         J: IntoIterator<Item = Option<pallas::Point>>,
     {
-        let nafs: Vec<_> = scalars
-            .into_iter()
-            .map(|c| c.borrow().non_adjacent_form(5))
-            .collect();
+        let scalars: Vec<_> = scalars.into_iter().map(|c| *c.borrow()).collect();
+        let points = points.into_iter().collect::<Option<Vec<_>>>()?;
+        // Batch verification uses only public scalars and points. Normalize together so the
+        // variable-time backend pays for one inversion rather than one per point.
+        let mut affine = alloc::vec![pallas::Affine::default(); points.len()];
+        Self::batch_normalize(&points, &mut affine);
+        Self::try_multiexp_vartime(&scalars, &affine)
+            .or_else(|| Some(pallas_multiscalar_mul_naf(&scalars, &points)))
+    }
+}
 
-        let lookup_tables = points
-            .into_iter()
-            .map(|P_opt| P_opt.map(|P| LookupTable5::<pallas::Point>::from(&P)))
-            .collect::<Option<Vec<_>>>()?;
+#[cfg(feature = "alloc")]
+fn pallas_multiscalar_mul_naf(
+    scalars: &[pallas::Scalar],
+    points: &[pallas::Point],
+) -> pallas::Point {
+    let nafs: Vec<_> = scalars.iter().map(|c| c.non_adjacent_form(5)).collect();
+    let lookup_tables: Vec<_> = points
+        .iter()
+        .map(LookupTable5::<pallas::Point>::from)
+        .collect();
+    let mut r = pallas::Point::identity();
+    let naf_size = pallas::Scalar::naf_length();
 
-        let mut r = pallas::Point::identity();
-        let naf_size = Self::Scalar::naf_length();
+    for i in (0..naf_size).rev() {
+        let mut t = r.double();
 
-        for i in (0..naf_size).rev() {
-            let mut t = r.double();
-
-            for (naf, lookup_table) in nafs.iter().zip(lookup_tables.iter()) {
-                #[allow(clippy::comparison_chain)]
-                if naf[i] > 0 {
-                    t += lookup_table.select(naf[i] as usize);
-                } else if naf[i] < 0 {
-                    t -= lookup_table.select(-naf[i] as usize);
-                }
+        for (naf, lookup_table) in nafs.iter().zip(lookup_tables.iter()) {
+            #[allow(clippy::comparison_chain)]
+            if naf[i] > 0 {
+                t += lookup_table.select(naf[i] as usize);
+            } else if naf[i] < 0 {
+                t -= lookup_table.select(-naf[i] as usize);
             }
-
-            r = t;
         }
 
-        Some(r)
+        r = t;
     }
+
+    r
 }

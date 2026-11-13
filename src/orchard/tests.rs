@@ -116,3 +116,173 @@ fn test_non_adjacent_form() {
     let scalar = pallas::Scalar::random(&mut rng);
     scalar_mul::tests::test_non_adjacent_form_for_scalar(5, scalar);
 }
+
+#[test]
+fn pallas_dispatch_matches_naf() {
+    use group::Group;
+    use rand_chacha::ChaChaRng;
+    use rand_core::SeedableRng;
+
+    let mut rng = ChaChaRng::from_seed([19; 32]);
+    // Cover both accepted and declined dispatcher shapes, including a full 128-signature batch.
+    for n in [0, 1, 2, 3, 6, 10, 16, 34, 66, 130, 258] {
+        let scalars: Vec<_> = (0..n).map(|_| pallas::Scalar::random(&mut rng)).collect();
+        let points: Vec<_> = (0..n).map(|_| pallas::Point::random(&mut rng)).collect();
+        for (scalars, points) in [
+            (scalars.clone(), points.clone()),
+            (alloc::vec![pallas::Scalar::ZERO; n], points.clone()),
+            (alloc::vec![-pallas::Scalar::ONE; n], points.clone()),
+            (scalars.clone(), alloc::vec![pallas::Point::identity(); n]),
+            (scalars, alloc::vec![pallas::Point::generator(); n]),
+        ] {
+            assert_eq!(
+                pallas::Point::vartime_multiscalar_mul(&scalars, &points),
+                super::pallas_multiscalar_mul_naf(&scalars, &points),
+                "MSM length {n}"
+            );
+            let mut missing: Vec<_> = points.into_iter().map(Some).collect();
+            if n > 0 {
+                missing[n / 2] = None;
+                assert_eq!(
+                    pallas::Point::optional_multiscalar_mul(&scalars, missing),
+                    None
+                );
+            }
+        }
+    }
+    // The old loop zipped unequal lengths; the dispatcher must decline without changing that.
+    for (scalars, points) in [
+        (
+            alloc::vec![pallas::Scalar::ONE; 3],
+            alloc::vec![pallas::Point::generator(); 2],
+        ),
+        (
+            alloc::vec![pallas::Scalar::ONE; 2],
+            alloc::vec![pallas::Point::generator(); 3],
+        ),
+    ] {
+        assert_eq!(
+            pallas::Point::vartime_multiscalar_mul(&scalars, &points),
+            super::pallas_multiscalar_mul_naf(&scalars, &points),
+        );
+    }
+}
+
+// Each tuple holds the signature type, verification key, signature and verified message.
+type BatchInput = (bool, [u8; 32], [u8; 64], [u8; 32]);
+
+fn check_batch_against_naf(inputs: &[BatchInput]) {
+    use crate::{batch, orchard, Error, HStar, VerificationKey};
+    use group::Group;
+    use rand_chacha::ChaChaRng;
+    use rand_core::{Rng, SeedableRng};
+
+    let mut batch = batch::Verifier::<orchard::SpendAuth, orchard::Binding>::new();
+    for (binding, vk, sig, msg) in inputs {
+        batch.queue(if *binding {
+            batch::Item::from_binding((*vk).into(), (*sig).into(), msg)
+        } else {
+            batch::Item::from_spendauth((*vk).into(), (*sig).into(), msg)
+        });
+    }
+
+    let mut rng = ChaChaRng::from_seed([42; 32]);
+    let reference = (|| {
+        let mut scalars = alloc::vec![pallas::Scalar::ZERO; 2];
+        let mut points = alloc::vec![
+            pallas::Point::from_bytes(&super::ORCHARD_SPENDAUTHSIG_BASEPOINT_BYTES).unwrap(),
+            pallas::Point::from_bytes(&super::ORCHARD_BINDINGSIG_BASEPOINT_BYTES).unwrap(),
+        ];
+        for (binding, vk, sig, msg) in inputs {
+            let s_bytes = sig[32..].try_into().unwrap();
+            let s = Option::<pallas::Scalar>::from(pallas::Scalar::from_repr(s_bytes))
+                .ok_or(Error::InvalidSignature)?;
+            let r_bytes = sig[..32].try_into().unwrap();
+            let r = Option::<pallas::Point>::from(pallas::Point::from_bytes(&r_bytes))
+                .ok_or(Error::InvalidSignature)?;
+            // Keep the old signature-before-key decoding order, including its error variant.
+            if *binding {
+                VerificationKey::<orchard::Binding>::try_from(*vk)?;
+            } else {
+                VerificationKey::<orchard::SpendAuth>::try_from(*vk)?;
+            }
+            let key = pallas::Point::from_bytes(vk).unwrap();
+            // Both Orchard signature types use the same challenge personalization.
+            let c = HStar::<orchard::SpendAuth>::default()
+                .update(r_bytes)
+                .update(vk)
+                .update(msg)
+                .finalize();
+            let z = if inputs.len() == 1 {
+                pallas::Scalar::ONE
+            } else {
+                pallas::Scalar::from_raw([rng.next_u64(), rng.next_u64(), 0, 0])
+            };
+            scalars[usize::from(*binding)] -= z * s;
+            scalars.extend([z * c, z]);
+            points.extend([key, r]);
+        }
+        if bool::from(super::pallas_multiscalar_mul_naf(&scalars, &points).is_identity()) {
+            Ok(())
+        } else {
+            Err(Error::InvalidSignature)
+        }
+    })();
+    assert_eq!(batch.verify(ChaChaRng::from_seed([42; 32])), reference);
+}
+
+#[test]
+fn orchard_batches_match_naf_acceptance_and_errors() {
+    use crate::{orchard, SigningKey, VerificationKey};
+    use group::Group;
+    use rand_chacha::ChaChaRng;
+    use rand_core::{Rng, SeedableRng};
+
+    let mut rng = ChaChaRng::from_seed([21; 32]);
+    for n in [0, 1, 2, 4, 16, 64, 128] {
+        let inputs: Vec<BatchInput> = (0..n)
+            .map(|i| {
+                let mut msg = [0; 32];
+                rng.fill_bytes(&mut msg);
+                if i % 2 == 0 {
+                    let sk = SigningKey::<orchard::SpendAuth>::new(&mut rng);
+                    let vk: VerificationKey<orchard::SpendAuth> = (&sk).into();
+                    (false, vk.into(), sk.sign(&mut rng, &msg).into(), msg)
+                } else {
+                    let sk = SigningKey::<orchard::Binding>::new(&mut rng);
+                    let vk: VerificationKey<orchard::Binding> = (&sk).into();
+                    (true, vk.into(), sk.sign(&mut rng, &msg).into(), msg)
+                }
+            })
+            .collect();
+        check_batch_against_naf(&inputs);
+        if n == 0 {
+            continue;
+        }
+        for position in [0, n / 2, n - 1] {
+            for mutation in 0..7 {
+                let mut changed = inputs.clone();
+                let (_, vk, sig, msg) = &mut changed[position];
+                match mutation {
+                    0 => msg[0] ^= 1,
+                    1 => sig[32..].fill(0xff),
+                    2 => sig[..32].fill(0xff),
+                    3 => *vk = [0xff; 32],
+                    4 => {
+                        *vk = [0xff; 32];
+                        sig[32..].fill(0xff);
+                    }
+                    5 | 6 => {
+                        // Pallas has cofactor one: identity is its only small-order point.
+                        *vk = pallas::Point::identity().to_bytes();
+                        *sig = [0; 64];
+                        sig[..32].copy_from_slice(vk);
+                        sig[32] = u8::from(mutation == 6);
+                    }
+                    _ => unreachable!(),
+                }
+                check_batch_against_naf(&changed);
+            }
+        }
+    }
+}
