@@ -4,6 +4,9 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* RedJubjub signature batches share field inversions when decoding signature
+  points and verification keys. Canonical encodings, ZIP 216 validation,
+  cofactor checks, random weights, and error precedence are unchanged.
 * Empty signature batches now return immediately, and single-signature batches
   verify without random weights or batch accumulator allocations. Neither path
   consumes randomness; malformed-encoding errors and cofactor checks are unchanged.
