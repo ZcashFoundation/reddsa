@@ -14,6 +14,9 @@ Entries are listed in reverse chronological order.
 * Batch items can retain decoded verification keys for RedJubjub and RedPallas.
   Native binding-point construction and spend authorization point extraction
   avoid redundant encoding round trips without changing key acceptance rules.
+* RedJubjub signature batches share field inversions when decoding signature
+  points and verification keys. Canonical encodings, ZIP 216 validation,
+  cofactor checks, random weights, and error precedence are unchanged.
 * Empty signature batches now return immediately, and single-signature batches
   verify without random weights or batch accumulator allocations. Neither path
   consumes randomness; malformed-encoding errors and cofactor checks are unchanged.
