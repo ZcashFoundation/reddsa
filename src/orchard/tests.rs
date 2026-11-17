@@ -10,6 +10,32 @@ use pasta_curves::arithmetic::CurveExt;
 use pasta_curves::pallas;
 
 #[test]
+fn affine_binding_keys_match_projective_keys() {
+    use crate::{orchard::Binding, VerificationKey};
+    use group::{Curve, Group};
+    use rand_chacha::ChaChaRng;
+    use rand_core::SeedableRng;
+
+    let mut rng = ChaChaRng::from_seed([81; 32]);
+    let points = [
+        pallas::Point::identity(),
+        pallas::Point::generator(),
+        -pallas::Point::generator(),
+    ]
+    .into_iter()
+    .chain((0..256).map(|_| pallas::Point::random(&mut rng)));
+    for point in points {
+        let affine = VerificationKey::<Binding>::from_affine(point.to_affine());
+        let projective = VerificationKey::<Binding> {
+            point,
+            bytes: point.to_bytes().into(),
+        };
+        assert_eq!(affine, projective);
+        assert_eq!(<[u8; 32]>::from(affine), <[u8; 32]>::from(projective));
+    }
+}
+
+#[test]
 fn orchard_spendauth_basepoint() {
     use super::ORCHARD_SPENDAUTHSIG_BASEPOINT_BYTES;
     assert_eq!(

@@ -8,10 +8,16 @@ Entries are listed in reverse chronological order.
   multiplication after batch normalization, retaining the NAF fallback when the
   dispatcher declines the input shape. Signature validation and the public API
   are unchanged.
+* Final RedPallas batch-MSM preparation explicitly uses variable-time normalization
+  for public signature points, verification keys and fixed generators, without changing
+  ordinary field inversion or secret-key arithmetic.
 
 * Empty signature batches now return immediately, and single-signature batches
   verify without random weights or batch accumulator allocations. Neither path
   consumes randomness; malformed-encoding errors and cofactor checks are unchanged.
+
+* `VerificationKey<orchard::Binding>::from_affine` constructs a binding key
+  from normalized coordinates, avoiding another inversion after batch normalization.
 
 ## 0.6.1 - 2026-09-25
 

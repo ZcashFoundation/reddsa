@@ -78,6 +78,25 @@ pub struct VerificationKey<T: SigType> {
     pub(crate) bytes: VerificationKeyBytes<T>,
 }
 
+// Adapted from https://github.com/zakura-core/common/blob/4191b07fc57f700bd7db5402dddc051daec3b0d5/crates/reddsa/src/verification_key.rs (PR #708).
+// Portions copyright (c) 2026 The Zakura Contributors, licensed under the MIT license or the Apache License, Version 2.0, at your option.
+impl VerificationKey<crate::orchard::Binding> {
+    /// Constructs a binding key from an already-normalized Pallas point.
+    ///
+    /// Retains its canonical encoding without another projective normalization.
+    /// Identity is accepted.
+    pub fn from_affine(point: pasta_curves::pallas::Affine) -> Self {
+        let bytes = VerificationKeyBytes {
+            bytes: point.to_bytes(),
+            _marker: PhantomData,
+        };
+        VerificationKey {
+            point: point.into(),
+            bytes,
+        }
+    }
+}
+
 impl<T: SigType> From<VerificationKey<T>> for VerificationKeyBytes<T> {
     fn from(pk: VerificationKey<T>) -> VerificationKeyBytes<T> {
         pk.bytes
