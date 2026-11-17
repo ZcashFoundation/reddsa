@@ -75,4 +75,5 @@ name = "bench"
 harness = false
 
 [patch.crates-io]
-pasta_curves = { git = "https://github.com/zcash/pasta_curves", rev = "f16b2cb5b492223296bf5642bda17ab366aa1955" }
+# pasta_curves combined/20261117: zcash/pasta_curves main + #187 #189 #186 #195 #188 #194 #183.
+pasta_curves = { git = "https://github.com/upbqdn/pasta_curves", rev = "95df6839da3dd8e5588bb547f63ac26575f1037e" }
