@@ -1,6 +1,8 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
 use rand::{rng as thread_rng, RngExt};
+use rand_chacha::ChaChaRng;
+use rand_core::SeedableRng;
 use reddsa::*;
 use std::convert::TryFrom;
 
@@ -16,20 +18,20 @@ enum Item<S: SpendAuth, B: Binding> {
 }
 
 fn sigs_with_distinct_keys<S: SpendAuth, B: Binding>() -> impl Iterator<Item = Item<S, B>> {
-    std::iter::repeat_with(|| {
-        let mut rng = thread_rng();
+    let mut rng = ChaChaRng::from_seed([37; 32]);
+    std::iter::repeat_with(move || {
         let msg = b"Bench";
         match rng.random::<u8>() % 2 {
             0 => {
-                let sk = SigningKey::<S>::new(thread_rng());
+                let sk = SigningKey::<S>::new(&mut rng);
                 let vk_bytes = VerificationKey::from(&sk).into();
-                let sig = sk.sign(thread_rng(), &msg[..]);
+                let sig = sk.sign(&mut rng, &msg[..]);
                 Item::SpendAuth { vk_bytes, sig }
             }
             1 => {
-                let sk = SigningKey::<B>::new(thread_rng());
+                let sk = SigningKey::<B>::new(&mut rng);
                 let vk_bytes = VerificationKey::from(&sk).into();
-                let sig = sk.sign(thread_rng(), &msg[..]);
+                let sig = sk.sign(&mut rng, &msg[..]);
                 Item::Binding { vk_bytes, sig }
             }
             _ => panic!(),
@@ -43,7 +45,7 @@ where
     B: Binding<Scalar = S::Scalar, Point = S::Point>,
 {
     let mut group = c.benchmark_group(name);
-    for &n in [0usize, 1, 2, 8, 16, 24, 32, 40, 48, 56, 64].iter() {
+    for &n in [0usize, 1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 128].iter() {
         // The empty batch has no per-signature throughput.
         if n > 0 {
             group.throughput(Throughput::Elements(u64::try_from(n).unwrap()));

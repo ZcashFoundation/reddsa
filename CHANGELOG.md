@@ -4,6 +4,11 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* RedPallas batch verification now tries Pasta's variable-time GLV multiscalar
+  multiplication after batch normalization, retaining the NAF fallback when the
+  dispatcher declines the input shape. Signature validation and the public API
+  are unchanged.
+
 * Empty signature batches now return immediately, and single-signature batches
   verify without random weights or batch accumulator allocations. Neither path
   consumes randomness; malformed-encoding errors and cofactor checks are unchanged.
