@@ -11,7 +11,9 @@ Entries are listed in reverse chronological order.
 * Final RedPallas batch-MSM preparation explicitly uses variable-time normalization
   for public signature points, verification keys and fixed generators, without changing
   ordinary field inversion or secret-key arithmetic.
-
+* Batch items can retain decoded verification keys for RedJubjub and RedPallas.
+  Native binding-point construction and spend authorization point extraction
+  avoid redundant encoding round trips without changing key acceptance rules.
 * Empty signature batches now return immediately, and single-signature batches
   verify without random weights or batch accumulator allocations. Neither path
   consumes randomness; malformed-encoding errors and cofactor checks are unchanged.
