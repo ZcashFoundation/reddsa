@@ -69,7 +69,7 @@ impl<T: SigType> From<VerificationKeyBytes<T>> for [u8; 32] {
 /// done separately.
 ///
 /// Inside [`with_trusted_encodings`](crate::trusted::with_trusted_encodings), the conversion
-/// accepts any bytes and defers the canonical-encoding check to the key's first use.
+/// accepts any bytes and defers decoding, with the canonical-encoding check, to each use.
 #[derive(Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "VerificationKeyBytes<T>"))]
@@ -116,7 +116,7 @@ impl<T: SigType> TryFrom<VerificationKeyBytes<T>> for VerificationKey<T> {
     type Error = Error;
 
     fn try_from(bytes: VerificationKeyBytes<T>) -> Result<Self, Self::Error> {
-        // The caller validated these bytes before, so decompress the point on first use.
+        // The caller validated these bytes before, so decompress the point when it is used.
         if crate::trusted::encodings_are_trusted() {
             return Ok(VerificationKey { point: None, bytes });
         }

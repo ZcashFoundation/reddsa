@@ -6,7 +6,7 @@ Entries are listed in reverse chronological order.
 
 * Added `trusted::with_trusted_encodings`, which runs a closure with
   decompression of verification keys parsed on the current thread deferred to
-  first use. It is for encodings the caller has already validated and must
+  each use (the decoded point is not kept). It is for encodings the caller has already validated and must
   never be used for network input. An invalid key parsed inside it makes
   `verify` and batch verification return `MalformedVerificationKey`, and
   `randomize` panic. The flag is per thread, so the closure must not block on

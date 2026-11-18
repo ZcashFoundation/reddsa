@@ -1,11 +1,13 @@
 //! Opt-in deferral of verification key decompression for encodings the caller already validated.
 
-/// Runs `f` with decompression of verification keys parsed on this thread deferred to first use.
+/// Runs `f` with decompression of verification keys parsed on this thread deferred to their use.
 ///
 /// Inside the scope, converting bytes to a [`VerificationKey`] always succeeds and skips the
-/// canonical-encoding check. The check runs when the key is first used: [`VerificationKey::verify`]
-/// and batch verification return [`Error::MalformedVerificationKey`] for an invalid key, and
-/// [`VerificationKey::randomize`] panics. Parsing has never rejected small order keys, inside the
+/// canonical-encoding check. The key is decoded, with that check, each time it is used, because
+/// `VerificationKey` is `Copy` and does not keep the result: so the saving is only for keys that
+/// are parsed but used at most once. [`VerificationKey::verify`] and batch verification return
+/// [`Error::MalformedVerificationKey`] for an invalid key, and [`VerificationKey::randomize`]
+/// panics. Parsing has never rejected small order keys, inside the
 /// scope or not.
 ///
 /// Only use it for encodings this library accepted before, such as transactions a node reads
