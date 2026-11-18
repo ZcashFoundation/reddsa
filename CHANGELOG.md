@@ -4,6 +4,9 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* Multi-signature RedDSA batches use unit weight for the first signature, avoiding
+  a random-weight multiplication while preserving rejection of cancelling invalid
+  signatures. Subsequent signatures still receive independent random weights.
 * Final RedPallas batch-MSM preparation explicitly uses variable-time normalization
   for public signature points, verification keys and fixed generators, without changing
   ordinary field inversion or secret-key arithmetic.
