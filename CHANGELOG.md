@@ -4,6 +4,14 @@ Entries are listed in reverse chronological order.
 
 ## Unreleased
 
+* Added `trusted::with_trusted_encodings`, which runs a closure with
+  decompression of verification keys parsed on the current thread deferred to
+  first use. It is for encodings the caller has already validated and must
+  never be used for network input. An invalid key parsed inside it makes
+  `verify` and batch verification return `MalformedVerificationKey`, and
+  `randomize` panic. The flag is per thread, so the closure must not block on
+  rayon or drive an executor. It is a no-op without the `std` feature.
+
 ## 0.6.1 - 2026-09-25
 
 * The `serde` feature no longer enables `serde/std`, so it can be used in

@@ -1,10 +1,25 @@
-//! Opt-in deferral of point decompression for encodings the caller already validated.
+//! Opt-in deferral of verification key decompression for encodings the caller already validated.
 
-/// Runs `f` with point decompression deferred for keys and commitments parsed on this thread.
+/// Runs `f` with decompression of verification keys parsed on this thread deferred to first use.
+///
+/// Inside the scope, converting bytes to a [`VerificationKey`] always succeeds and skips the
+/// canonical-encoding check. The check runs when the key is first used: [`VerificationKey::verify`]
+/// and batch verification return [`Error::MalformedVerificationKey`] for an invalid key, and
+/// [`VerificationKey::randomize`] panics. Parsing has never rejected small order keys, inside the
+/// scope or not.
 ///
 /// Only use it for encodings this library accepted before, such as transactions a node reads
-/// back from its own verified state. Never parse network input inside it: the canonical-encoding
-/// and small-order checks are skipped, and an invalid point panics when it is first used.
+/// back from its own verified state. Never parse network input inside it.
+///
+/// The flag is per thread, so `f` must not block on rayon (`join`, `scope`, `par_iter`) or drive
+/// an executor, or other jobs run on this thread meanwhile would parse with trust on.
+///
+/// Without the `std` feature this is a no-op: `f` runs and keys are decoded eagerly.
+///
+/// [`VerificationKey`]: crate::VerificationKey
+/// [`VerificationKey::verify`]: crate::VerificationKey::verify
+/// [`VerificationKey::randomize`]: crate::VerificationKey::randomize
+/// [`Error::MalformedVerificationKey`]: crate::Error::MalformedVerificationKey
 pub fn with_trusted_encodings<R>(f: impl FnOnce() -> R) -> R {
     #[cfg(feature = "std")]
     {
@@ -41,7 +56,10 @@ mod tests {
     use super::*;
     use rand_core::SeedableRng;
 
-    use crate::{sapling, Error, Signature, SigningKey, VerificationKey};
+    use crate::{
+        batch, orchard, sapling, Binding, Error, SigType, Signature, SigningKey, SpendAuth,
+        VerificationKey,
+    };
 
     #[test]
     fn malformed_keys_are_rejected_unless_trusted() {
@@ -77,6 +95,63 @@ mod tests {
             trusted.verify(b"other", &sig),
             decoded.verify(b"other", &sig)
         );
+    }
+
+    fn lazy<T: SigType>(bytes: [u8; 32]) -> VerificationKey<T> {
+        with_trusted_encodings(|| VerificationKey::<T>::try_from(bytes))
+            .expect("trusted keys are not decoded")
+    }
+
+    // Checks single and batch verification with keys parsed inside the scope.
+    fn check_lazy_keys<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>>() {
+        let mut rng = rand_chacha::ChaChaRng::from_seed([7; 32]);
+        let msg = b"msg";
+        let spend_sk = SigningKey::<S>::new(&mut rng);
+        let binding_sk = SigningKey::<B>::new(&mut rng);
+        let spend_sig = spend_sk.sign(&mut rng, msg);
+        let binding_sig = binding_sk.sign(&mut rng, msg);
+        let spend_vk: VerificationKey<S> = (&spend_sk).into();
+        let binding_vk: VerificationKey<B> = (&binding_sk).into();
+        let spend_vk = lazy::<S>(spend_vk.into());
+        let binding_vk = lazy::<B>(binding_vk.into());
+        assert_eq!(spend_vk.verify(msg, &spend_sig), Ok(()));
+        assert_eq!(binding_vk.verify(msg, &binding_sig), Ok(()));
+
+        let batch = |spend_vk: VerificationKey<S>, rng: &mut rand_chacha::ChaChaRng| {
+            let mut batch = batch::Verifier::<S, B>::new();
+            batch.queue(batch::Item::from_spendauth(spend_vk.into(), spend_sig, msg));
+            batch.queue(batch::Item::from_binding(
+                binding_vk.into(),
+                binding_sig,
+                msg,
+            ));
+            with_trusted_encodings(|| batch.verify(rng))
+        };
+        assert_eq!(batch(spend_vk, &mut rng), Ok(()));
+
+        let invalid = lazy::<S>([0xff; 32]);
+        assert_eq!(
+            invalid.verify(msg, &spend_sig),
+            Err(Error::MalformedVerificationKey)
+        );
+        assert_eq!(
+            batch(invalid, &mut rng),
+            Err(Error::MalformedVerificationKey)
+        );
+        let randomizer = <S::Scalar as group::ff::Field>::random(&mut rng);
+        let randomize = std::panic::AssertUnwindSafe(|| invalid.randomize(&randomizer));
+        assert!(std::panic::catch_unwind(randomize).is_err());
+        assert!(!encodings_are_trusted());
+    }
+
+    #[test]
+    fn lazy_sapling_keys_verify() {
+        check_lazy_keys::<sapling::SpendAuth, sapling::Binding>();
+    }
+
+    #[test]
+    fn lazy_orchard_keys_verify() {
+        check_lazy_keys::<orchard::SpendAuth, orchard::Binding>();
     }
 
     #[test]

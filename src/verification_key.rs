@@ -63,12 +63,14 @@ impl<T: SigType> From<VerificationKeyBytes<T>> for [u8; 32] {
 ///
 /// ## Consensus properties
 ///
-/// The `TryFrom<VerificationKeyBytes>` conversion performs the following Zcash
-/// consensus rule checks:
+/// The `TryFrom<VerificationKeyBytes>` conversion checks that the bytes are a canonical
+/// encoding of a verification key. It accepts small order keys, including the identity, as
+/// the RedDSA specification does; Zcash Sapling's check that `rk` is not of small order is
+/// done separately.
 ///
-/// 1. The check that the bytes are a canonical encoding of a verification key;
-/// 2. The check that the verification key is not a point of small order.
-#[derive(Copy, Clone, Debug)]
+/// Inside [`with_trusted_encodings`](crate::trusted::with_trusted_encodings), the conversion
+/// accepts any bytes and defers the canonical-encoding check to the key's first use.
+#[derive(Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "VerificationKeyBytes<T>"))]
 #[cfg_attr(feature = "serde", serde(into = "VerificationKeyBytes<T>"))]
@@ -83,6 +85,18 @@ pub struct VerificationKey<T: SigType> {
 impl<T: SigType> PartialEq for VerificationKey<T> {
     fn eq(&self, other: &Self) -> bool {
         self.bytes == other.bytes
+    }
+}
+
+// Same output for keys with and without a decoded point.
+impl<T: SigType> core::fmt::Debug for VerificationKey<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let mut debug = f.debug_struct("VerificationKey");
+        match self.point() {
+            Ok(point) => debug.field("point", &point),
+            Err(_) => debug.field("point", &"invalid encoding"),
+        };
+        debug.field("bytes", &self.bytes).finish()
     }
 }
 
@@ -131,9 +145,7 @@ impl<T: SigType> TryFrom<VerificationKeyBytes<T>> for VerificationKey<T> {
 }
 
 impl<T: SigType> VerificationKey<T> {
-    /// Returns the point, decompressing it if the key was parsed from bytes.
-    ///
-    /// Small-order points, including the identity, are accepted, as before.
+    /// Returns the point, decoding it if the key was parsed inside the trusted scope.
     pub(crate) fn point(&self) -> Result<T::Point, Error> {
         if let Some(point) = self.point {
             return Ok(point);
@@ -156,8 +168,17 @@ impl<T: SpendAuth> VerificationKey<T> {
     /// Randomize this verification key with the given `randomizer`.
     ///
     /// Randomization is only supported for `SpendAuth` keys.
+    ///
+    /// # Panics
+    ///
+    /// Panics if this key was parsed inside
+    /// [`with_trusted_encodings`](crate::trusted::with_trusted_encodings) from bytes that are not
+    /// a canonical point encoding.
     pub fn randomize(&self, randomizer: &Randomizer<T>) -> VerificationKey<T> {
-        let point = self.point().expect("trusted keys are valid") + (T::basepoint() * randomizer);
+        let point = self
+            .point()
+            .expect("keys parsed in a trusted scope are canonical encodings")
+            + (T::basepoint() * randomizer);
         let bytes = VerificationKeyBytes {
             bytes: point.to_bytes().as_ref().try_into().unwrap(),
             _marker: PhantomData,
