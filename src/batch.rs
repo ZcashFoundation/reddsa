@@ -276,7 +276,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
     /// - R_i is the signature's R value;
     /// - s_i is the signature's s value;
     /// - c_i is the hash of the message and other data;
-    /// - z_i is a random 128-bit Scalar;
+    /// - z_i is a random 128-bit Scalar, except that z_0 = 1;
     /// - h_G is the cofactor of the group;
     /// - P_G is the generator of the subgroup;
     ///
@@ -307,8 +307,8 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         let capacity = if n == 1 { 0 } else { n };
         let mut VK_coeffs = Vec::with_capacity(capacity);
         let mut VKs = Vec::with_capacity(capacity);
-        let mut R_coeffs = Vec::with_capacity(capacity);
-        let mut Rs = Vec::with_capacity(capacity);
+        let mut R_coeffs = Vec::with_capacity(capacity.saturating_sub(1));
+        let mut Rs = Vec::with_capacity(capacity.saturating_sub(1));
         let mut P_spendauth_coeff = S::Scalar::ZERO;
         let mut P_binding_coeff = B::Scalar::ZERO;
 
@@ -317,7 +317,8 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         // scalar/R/key order, including errors across item boundaries.
         let mut decoded_points = None;
 
-        for item in self.signatures.iter() {
+        let mut unit_R = None;
+        for (i, item) in self.signatures.iter().enumerate() {
             let (s_bytes, r_bytes, c) = match item.inner {
                 Inner::SpendAuth { sig, c, .. } => (sig.s_bytes, sig.r_bytes, c),
                 Inner::Binding { sig, c, .. } => (sig.s_bytes, sig.r_bytes, c),
@@ -387,9 +388,18 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 };
             }
 
-            let z = S::Scalar::from_raw(gen_128_bits(&mut rng));
-
-            let P_coeff = z * s;
+            // Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/667).
+            // Exactly one unit-weight signature avoids a scalar multiplication
+            // without allowing errors in two signatures to cancel.
+            let (P_coeff, VK_coeff) = if i == 0 {
+                unit_R = Some(R);
+                (s, c)
+            } else {
+                let z = S::Scalar::from_raw(gen_128_bits(&mut rng));
+                R_coeffs.push(z);
+                Rs.push(R);
+                (z * s, z * c)
+            };
             match item.inner {
                 Inner::SpendAuth { .. } => {
                     P_spendauth_coeff -= P_coeff;
@@ -399,10 +409,7 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
                 }
             };
 
-            R_coeffs.push(z);
-            Rs.push(R);
-
-            VK_coeffs.push(S::Scalar::ZERO + (z * c));
+            VK_coeffs.push(S::Scalar::ZERO + VK_coeff);
             VKs.push(VK);
         }
 
@@ -416,7 +423,8 @@ impl<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>> Verifier<S,
         let basepoints = [S::basepoint(), B::basepoint()];
         let points = basepoints.iter().chain(VKs.iter()).chain(Rs.iter());
 
-        let check = S::Point::vartime_multiscalar_mul(scalars, points);
+        let check = S::Point::vartime_multiscalar_mul(scalars, points)
+            + unit_R.expect("a nonempty batch has a first signature");
 
         if check.is_small_order().into() {
             Ok(())

@@ -123,7 +123,7 @@ where
 {
     assert_eq!(item.clone().verify_single(), expected);
     assert_eq!(verify_batch(core::slice::from_ref(&item)), (expected, 0));
-    // Two copies exercise the unchanged randomized batch equation.
+    // Two copies exercise the randomized batch equation.
     assert_eq!(verify_batch(&[item.clone(), item]).0, expected);
 }
 
@@ -201,8 +201,9 @@ where
     }
 
     for n in [2, 8, 32] {
-        // Each random 128-bit weight consumes four ChaCha u32 words.
-        let words = u128::try_from(n).unwrap() * 4;
+        // Every random 128-bit weight consumes four ChaCha u32 words;
+        // the first item has unit weight.
+        let words = (u128::try_from(n).unwrap() - 1) * 4;
         assert_eq!(verify_batch(&valid_items[..n]), (Ok(()), words));
         for bad_index in [0, n - 1] {
             let mut items = valid_items[..n].to_vec();
@@ -210,6 +211,87 @@ where
             assert_eq!(verify_batch(&items), (Err(Error::InvalidSignature), words));
         }
     }
+}
+
+// Adapted from zakura-core/common (https://github.com/zakura-core/common/pull/667).
+fn check_cancelling_signature_errors<S, B>()
+where
+    S: SpendAuth,
+    B: Binding<Scalar = S::Scalar, Point = S::Point>,
+{
+    use group::ff::{Field, PrimeField};
+
+    let mut rng = ChaChaRng::from_seed([67; 32]);
+    let message = b"unit-weight batch cancellation";
+    let spend_sk = SigningKey::<S>::new(&mut rng);
+    let valid = batch::Item::<S, B>::from_spendauth(
+        VerificationKey::from(&spend_sk).into(),
+        spend_sk.sign(&mut rng, message),
+        message,
+    );
+    let shifted = |binding: bool, shift: S::Scalar, rng: &mut ChaChaRng| {
+        let (vk, mut signature): ([u8; 32], [u8; 64]) = if binding {
+            let sk = SigningKey::<B>::new(&mut *rng);
+            (
+                VerificationKey::from(&sk).into(),
+                sk.sign(&mut *rng, message).into(),
+            )
+        } else {
+            let sk = SigningKey::<S>::new(&mut *rng);
+            (
+                VerificationKey::from(&sk).into(),
+                sk.sign(&mut *rng, message).into(),
+            )
+        };
+        let mut repr = <S::Scalar as PrimeField>::Repr::default();
+        repr.as_mut().copy_from_slice(&signature[32..]);
+        let s = Option::<S::Scalar>::from(S::Scalar::from_repr(repr))
+            .expect("a generated signature has a canonical scalar");
+        signature[32..].copy_from_slice((s + shift).to_repr().as_ref());
+        if binding {
+            batch::Item::<S, B>::from_binding(vk.into(), signature.into(), message)
+        } else {
+            batch::Item::<S, B>::from_spendauth(vk.into(), signature.into(), message)
+        }
+    };
+    for (first_binding, second_binding) in
+        [(false, false), (true, true), (false, true), (true, false)]
+    {
+        for order in [false, true] {
+            let plus = shifted(first_binding, S::Scalar::ONE, &mut rng);
+            let minus = shifted(second_binding, -S::Scalar::ONE, &mut rng);
+            let pair = if order { [minus, plus] } else { [plus, minus] };
+            assert_eq!(
+                verify_batch(core::slice::from_ref(&pair[0])).0,
+                Err(Error::InvalidSignature)
+            );
+            assert_eq!(
+                verify_batch(core::slice::from_ref(&pair[1])).0,
+                Err(Error::InvalidSignature)
+            );
+            for placement in 0..=3 {
+                let mut items = pair.to_vec();
+                if placement < 3 {
+                    items.insert(placement, valid.clone());
+                }
+                assert_eq!(
+                    verify_batch(&items).0,
+                    Err(Error::InvalidSignature),
+                    "invalid pair accepted: binding=({first_binding},{second_binding}), order={order}, placement={placement}",
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn sapling_cancelling_signature_errors_are_rejected() {
+    check_cancelling_signature_errors::<sapling::SpendAuth, sapling::Binding>();
+}
+
+#[test]
+fn orchard_cancelling_signature_errors_are_rejected() {
+    check_cancelling_signature_errors::<orchard::SpendAuth, orchard::Binding>();
 }
 
 #[test]
