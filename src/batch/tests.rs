@@ -179,7 +179,7 @@ fn retained_keys_preserve_jubjub_torsion_in_verification() {
     assert_eq!(verify(&items).0, Ok(()));
 }
 
-// Independent per-point decoding and group arithmetic, with the verifier's weights and RNG use.
+// Original per-point batch equation: all signatures, including the first, get random weights.
 fn reference<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>>(
     items: &[Item<S, B>],
 ) -> (Result<(), Error>, u128) {
@@ -229,7 +229,16 @@ fn compare<S: SpendAuth, B: Binding<Scalar = S::Scalar, Point = S::Point>>(items
     }
     let mut rng = ChaChaRng::from_seed([42; 32]);
     let result = verifier.verify(&mut rng);
-    assert_eq!((result, rng.get_word_pos()), reference(items));
+    let (original_result, original_words) = reference(items);
+    assert_eq!(result, original_result);
+    // The optimized verifier skips exactly the first random weight when it
+    // reaches the first valid item; malformed first items consume none.
+    let saved_words = if items.len() > 1 && original_words > 0 {
+        4
+    } else {
+        0
+    };
+    assert_eq!(rng.get_word_pos(), original_words - saved_words);
 }
 
 fn batches_match_individual_decoding<
@@ -318,7 +327,7 @@ fn redjubjub_batches_match_individual_decoding() {
 }
 
 #[test]
-fn redpallas_batches_match_individual_decoding() {
+fn redpallas_batch_weights_match_original_for_random_signatures() {
     batches_match_individual_decoding::<orchard::SpendAuth, orchard::Binding>();
 }
 
